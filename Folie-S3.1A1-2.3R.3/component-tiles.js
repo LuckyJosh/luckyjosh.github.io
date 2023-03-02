@@ -2314,6 +2314,10 @@ const sketch = (p5Inst) => {  // remove const sketch
       this.isFrozen = frozen;
 
       this.isEmpty = empty;
+      if (this.isEmpty) {
+        this.tileColors = ["#1ED6EF", "#CFE6E9"]
+        this.colorIndex = 0
+      }
 
       //all poinst on edge except the verticies (no cutting along the edges allowed)
       //@improvment: the allowed verticies have to be defined more strictly :AVAILABELCUTS:
@@ -2694,6 +2698,8 @@ const sketch = (p5Inst) => {  // remove const sketch
                 p5Inst.pop();
                 p5Inst.fill("#888F");
 
+                // let numRows = countUnits + ((countUnits < 0) ? 1 : 0);
+                // if (SHOWRESIZEEQ) p5Inst.text(`${numRows} • ${this.steps[idx]} = ${numRows * this.steps[idx]}`, edgeX, edgeY + (draggingVector.y / 2));
                 p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX, edgeY + (draggingVector.y / 2));
 
               } else if (draggingDirection == "East") {
@@ -2808,52 +2814,74 @@ const sketch = (p5Inst) => {  // remove const sketch
         // let alignmentArrows = []
         // let arrowLabel = [];
         this.edges.forEach((edge, i) => {
-          //@refactor: config for the labelpadding, default 0.25
-          switch (this.edgeDirections[i]) {
-            case DIRECTIONS.SN: alignment = [p5Inst.LEFT, p5Inst.CENTER];
-              // alignmentArrows = [[p5Inst.RIGHT, p5Inst.TOP], [p5Inst.RIGHT, p5Inst.BOTTOM]];
-              // arrowLabel = ['↓', '↑'];
-              translation = [0.25 * this.pixelUnit, 0];
-              break;
-            case DIRECTIONS.NS: alignment = [p5Inst.RIGHT, p5Inst.CENTER];
-              // alignmentArrows = [[p5Inst.LEFT, p5Inst.BOTTOM], [p5Inst.LEFT, p5Inst.TOP]];
-              // arrowLabel = ['↑','↓'];
-              translation = [-0.25 * this.pixelUnit, 0];
-              break;
-            case DIRECTIONS.WE: alignment = [p5Inst.CENTER, p5Inst.TOP];
-              // alignmentArrows = [[p5Inst.RIGHT, p5Inst.BOTTOM], [p5Inst.LEFT, p5Inst.BOTTOM]];
-              // arrowLabel = ["←","→"];
-              translation = [0, 0.25 * this.pixelUnit];
-
-              break;
-            case DIRECTIONS.EW: alignment = [p5Inst.CENTER, p5Inst.BOTTOM];
-              // alignmentArrows = [[p5Inst.LEFT, p5Inst.TOP], [p5Inst.RIGHT, p5Inst.TOP]];
-              // arrowLabel = ["→","←"];
-              translation = [0, -0.25 * this.pixelUnit];
-              break;
-          }
-          let midpoint = vmult(vadd(...edge), 0.5);
-          // p5Inst.circle(...midpoint.xy, 20);
-          p5Inst.textStyle(p5Inst.BOLD);
-          // p5Inst.fill("#A0A");
-          p5Inst.push();
-          // @refactor: config for fontsize
-          p5Inst.textSize(20);
-          p5Inst.translate(...translation);
-          p5Inst.textAlign(...alignment);
-          // print("directions:", i, this.edgeDirections[i]);
           switch (this.edgelabels[i]) {
-            case "!": label = abs(this.steps[i]) * this.displayUnit.value + " " + this.displayUnit.name;
+            case "!": label = `${abs(this.steps[i]) * this.displayUnit.value + " " + this.displayUnit.name}`;
               break;
             case "?": label = "?";
               break;
             case "_": label = "";
               break;
           }
+
+          // @refactor: config for fontsize
+          let TEXTSIZEEDGELABEL = 16;
+          //@refactor: config for the labelpadding, default 0.25
+          let basePad = [0.7 * this.pixelUnit, 0.5 * this.pixelUnit];
+          switch (this.edgeDirections[i]) {
+            case DIRECTIONS.SN: alignment = [p5Inst.LEFT, p5Inst.CENTER];
+              // alignmentArrows = [[p5Inst.RIGHT, p5Inst.TOP], [p5Inst.RIGHT, p5Inst.BOTTOM]];
+              // arrowLabel = ['↓', '↑'];
+              translation = [basePad[0], 0];
+              break;
+            case DIRECTIONS.NS: alignment = [p5Inst.RIGHT, p5Inst.CENTER];
+              // alignmentArrows = [[p5Inst.LEFT, p5Inst.BOTTOM], [p5Inst.LEFT, p5Inst.TOP]];
+              // arrowLabel = ['↑','↓'];
+              translation = [-basePad[0], 0];
+              break;
+            case DIRECTIONS.WE: alignment = [p5Inst.CENTER, p5Inst.TOP];
+              // alignmentArrows = [[p5Inst.RIGHT, p5Inst.BOTTOM], [p5Inst.LEFT, p5Inst.BOTTOM]];
+              // arrowLabel = ["←","→"];
+              translation = [0, basePad[1]];
+
+              break;
+            case DIRECTIONS.EW: alignment = [p5Inst.CENTER, p5Inst.BOTTOM];
+              // alignmentArrows = [[p5Inst.LEFT, p5Inst.TOP], [p5Inst.RIGHT, p5Inst.TOP]];
+              // arrowLabel = ["→","←"];
+              translation = [0, -basePad[1]];
+              break;
+          }
+          if (label == "?") {
+            translation = [translation[0] * 0.5, translation[1] * 0.5];
+          }
+
+          // print("edge:", edge);
+          alignment = [p5Inst.CENTER, p5Inst.CENTER];
+          let midpoint = vmult(vadd(...edge), 0.5);
+          // p5Inst.circle(...midpoint.xy, 20);
+          p5Inst.textStyle(p5Inst.BOLD);
+          // p5Inst.fill("#A0A");
+          p5Inst.push();
+          p5Inst.textSize(TEXTSIZEEDGELABEL);
+          p5Inst.translate(...translation);
+          p5Inst.push();
+          if (label != "") {
+            p5Inst.translate(...midpoint.xy);
+            vdraw(vsub(edge[0], midpoint));
+            vdraw(vsub(edge[1], midpoint));
+          }
+          p5Inst.pop();
+          p5Inst.push();
+          p5Inst.noStroke();
+          p5Inst.fill("#FFF");
+          p5Inst.rectMode(p5Inst.CENTER);
+          p5Inst.rect(...midpoint.xy, p5Inst.textWidth(label), TEXTSIZEEDGELABEL);
+          p5Inst.pop();
+          p5Inst.textAlign(...alignment);
+          p5Inst.text(label, midpoint.x, midpoint.y);
+          // print("directions:", i, this.edgeDirections[i]);
           // draw the distance 'arrows' <------>
           // p5Inst.strokeWeight(2);
           // p5Inst.line(...edge.map(vert => vert.xy).flat());
-          p5Inst.text(`${label}`, midpoint.x, midpoint.y);
 
           //@refactor: draw custom 'extent arrows' 
           // p5Inst.textAlign(...alignmentArrows);
@@ -3034,7 +3062,7 @@ const sketch = (p5Inst) => {  // remove const sketch
 
   }// }}}
 
-  let drawGrid = true;
+  let drawGrid = false;
   p5Inst.draw = function() {// {{{
     p5Inst.background(250);
     debugbuffer.setbackground();
@@ -3204,6 +3232,9 @@ const sketch = (p5Inst) => {  // remove const sketch
     if (mouseOnCanvas()) {
       Array.from(Clickable.allClickables.values()).forEach(m => m.mousePressed());
 
+      let clickTargets = [...Moveable.allMoveables.map(m => !m.isClicked), ...[...Clickable.allClickables.values()].map(m => !m.isClicked)];
+      if (prod(clickTargets) == 1) Moveable.allMoveables.forEach(m => m.isActive = false);
+
       [clickMouseX, clickMouseY] = [p5Inst.mouseX, p5Inst.mouseY];
 
       let gridBtn = Clickable.allClickables.get("gridButton");
@@ -3224,9 +3255,7 @@ const sketch = (p5Inst) => {  // remove const sketch
         inFrontMoveable.mousePressed();
         // }
       }
-      else {
-        Moveable.allMoveables.forEach(m => m.isActive = false)
-      }
+
 
       return false
     }
@@ -3307,7 +3336,7 @@ const sketch = (p5Inst) => {  // remove const sketch
       Moveable.allMoveables.splice(delIdxM, 1);
       let T = Tiles.createTiles(...args);
       T.isActive = true;
-      T.referencePoint(p5Inst.createVector(0.1, 0.1));
+      T.referencePoint = vadd(T.referencePoint, p5Inst.createVector(0.1, 0.1));
       if (DEBUGMODE) print(Moveable.allMoveables)
       if (DEBUGMODE) print(Tiles.allTiles)
 
