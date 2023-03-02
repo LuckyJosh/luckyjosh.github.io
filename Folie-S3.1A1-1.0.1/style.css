@@ -1,0 +1,16 @@
+
+div#sketch{
+position: absolute;
+
+height: 98%;
+margin-top: 0.5%;
+margin-left:1%;
+width:98% ;
+
+}
+
+.p5Canvas {
+  border-style: solid;
+  border-color: #EAEAEA;
+  border-width: 1px;
+}
