@@ -1,0 +1,29 @@
+{
+  "configuration": {
+    "debuginfos": false,
+    "tiles": [
+      {
+        "location": [
+          0.4,
+          0.1
+        ],
+        "steps": [
+          -5,
+          6,
+          2,
+          -2,
+          3
+        ],
+        "startdirection": "y",
+        "unit": [
+          0.035,
+          1,
+          "cm"
+        ],
+        "empty": false,
+        "edgelabels": "______",
+        "frozen": true
+      }
+    ]
+  }
+}
