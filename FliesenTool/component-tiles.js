@@ -10,6 +10,7 @@ const sketch = (p5Inst) => {  // remove const sketch
   let draggingDirection;
   let countUnits;
   let clickMouseX, clickMouseY;
+  let DYNAMICCUT = false;
   let p5 = require("p5");
   let initialData = p5Inst.getDivomathConfig();
   let initialConfig = { "tiles": [] };
@@ -2500,7 +2501,7 @@ const sketch = (p5Inst) => {  // remove const sketch
       if (this.isCut) {
         let canclePos = this.step2Vert()(this.currentCut[0]);
         let lastPos = this.step2Vert()(this.currentCut[this.currentCut.length - 1]);
-        print("befor if:", vsub(mouse, canclePos).mag(), 0.25 * this.pixelUnit);
+        // print("befor if:", vsub(mouse, canclePos).mag(), 0.25 * this.pixelUnit);
         if (vsub(mouse, canclePos).mag() < 0.25 * this.pixelUnit) {
 
           this.currentCut = [];
@@ -2612,19 +2613,19 @@ const sketch = (p5Inst) => {  // remove const sketch
       //
       let lastCutPoint = this.currentCut[this.currentCut.length - 1];
       let availCuts = pointsNESW(lastCutPoint);
-      print(`z:${this.zorder} l3502`, "AvailCuts:", JSON.stringify(availCuts));
+      // print(`z:${this.zorder} l3502`, "AvailCuts:", JSON.stringify(availCuts));
       if (availCuts) {
 
         availCuts = availCuts.filter(point => this.allowedCuts.map(it => it.toString()).includes(point.toString()));
-        print(`z:${this.zorder} l3506`, "AvailCuts:", JSON.stringify(availCuts));
+        // print(`z:${this.zorder} l3506`, "AvailCuts:", JSON.stringify(availCuts));
         availCuts = availCuts.filter(point => !this.currentCut.map(it => it.toString()).includes(point.toString()));
-        print(`z:${this.zorder} l3508`, "AvailCuts:", JSON.stringify(availCuts));
+        // print(`z:${this.zorder} l3508`, "AvailCuts:", JSON.stringify(availCuts));
 
         let edgeIdx = this.edgePoints.findIndex(it => it.toString() == lastCutPoint.toString());
         if ((this.currentCut.length == 1) && (edgeIdx > 0)) {
           let forbiddenEdgeIdx = this.stepsSummed.findIndex(it => it > edgeIdx);
           let forbiddenEdgeIdxs = [(forbiddenEdgeIdx + this.stepsSummed.length - 1) % this.stepsSummed.length, forbiddenEdgeIdx, (forbiddenEdgeIdx + 1) % this.stepsSummed.length];
-          print("forbidden Idx(s):", forbiddenEdgeIdx, forbiddenEdgeIdxs);
+          // print("forbidden Idx(s):", forbiddenEdgeIdx, forbiddenEdgeIdxs);
           availCuts = availCuts.filter(point => {
             if (DEBUGMODE) print("point:", point);
             let edgeIdx = (this.edgePoints.findIndex(it => it.toString() == point.toString()));
@@ -2715,7 +2716,7 @@ const sketch = (p5Inst) => {  // remove const sketch
                 let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()]
                   .map(it => it - ((numCols - 1) - oddCorrection) / 2)
                   .map(it => [edgeX - (it + 0.5 * ((oddCorrection + 1) % 2)) * this.pixelUnit, edgeY])
-                print("lineStarts:", lineStarts);
+                // print("lineStarts:", lineStarts);
                 lineStarts.forEach(xy => p5Inst.line(...xy, xy[0], draggingVector.y + xy[1]));
 
                 p5Inst.pop();
@@ -2749,7 +2750,7 @@ const sketch = (p5Inst) => {  // remove const sketch
                 let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()]
                   .map(it => it - ((numRows - 1) - oddCorrection) / 2)
                   .map(it => [edgeX, edgeY - (it + 0.5 * ((oddCorrection + 1) % 2)) * this.pixelUnit])
-                print("lineStarts:", lineStarts);
+                // print("lineStarts:", lineStarts);
                 lineStarts.forEach(xy => p5Inst.line(...xy, xy[0] + draggingVector.x, xy[1]));
 
                 p5Inst.pop();
@@ -3079,6 +3080,8 @@ const sketch = (p5Inst) => {  // remove const sketch
       Tiles.createTiles(canvasBuffer.rF.P(...T.location), T.steps, T.startdirection, T.unit, T.empty, T.edgelabels, T.frozen, T.zorder, T.resizable, T.cuttable, T.label);
     })
 
+    countUnits = 0;
+    draggingVector = p5Inst.createVector(0, 0);
 
 
     // Tiles.createTiles(canvasBuffer.rF.P(0.5, 0.5), [-1, -3, 4, -2, 1, 4, 4, -1, 1, 3], "x", [0.025, 1, "cm"], false, true);
@@ -3095,7 +3098,6 @@ const sketch = (p5Inst) => {  // remove const sketch
     if (DEBUGMODE) print(Tiles.allTiles[0].pixelUnit);
     if (DEBUGMODE) print(Tiles.allTiles[0].verts);
     Moveable.allMoveables.forEach((M, i) => print(i, M));
-    print(pointsNESW([5, 5]));
 
     if (DEBUGMODE) {
       // btn.position(...canvasBuffer.rF.P(0.02, 0.02).xy);
@@ -3170,7 +3172,12 @@ const sketch = (p5Inst) => {  // remove const sketch
     // tiles[1].draw();
 
     // tiles[1].draw();
+    // if (DYNAMICCUT) {
+    // p5Inst.fill("#A115");
+    // p5Inst.circle(p5Inst.mouseX, p5Inst.mouseY, 20)
+    // }
     p5Inst.pop();
+
     // print(p5Inst.mouseVec())
     // let T = Tiles.allTiles[Tiles.allTiles.length - 1];
     // if (T.currentCut.length > 0) {
@@ -3318,17 +3325,44 @@ const sketch = (p5Inst) => {  // remove const sketch
 
 
     let draggedMoveable = Moveable.allMoveables[Moveable.allMoveables.map(m => m.isDragged).findIndex(it => it)];
-    if (draggedMoveable && !draggedMoveable.isFrozen) {
-      draggedMoveable.mouseDragged();
-      // if (draggedMoveable instanceof Tiles) print(draggedMoveable.isEnclosedByTiles());
-      // if (draggedMoveable instanceof Tiles) print(JSON.stringify(draggedMoveable.isEnclosedByTiles()));
+    if (draggedMoveable instanceof Tiles && draggedMoveable.isCut) {
+      DYNAMICCUT = true;
+      let tiles = draggedMoveable
+      let pxU = tiles.pixelUnit;
+      tiles.availableCuts.map(tiles.step2Vert()).forEach(it => {
+        if (vnorm(vsub(p5Inst.mouseVec(), it)) < 0.25 * pxU) {
+          tiles.handleCutting()
+        }
+      });
 
+
+      return false
     } else {
-      let inFrontMoveable = Moveable.inFront();
-      if (inFrontMoveable && !inFrontMoveable.isFrozen) {
-        inFrontMoveable.mouseDragged();
+      if (draggedMoveable && !draggedMoveable.isFrozen) {
+        draggedMoveable.mouseDragged();
+        // if (draggedMoveable instanceof Tiles) print(draggedMoveable.isEnclosedByTiles());
+        // if (draggedMoveable instanceof Tiles) print(JSON.stringify(draggedMoveable.isEnclosedByTiles()));
       }
     }
+    // else {
+    //   print("infront movable")
+    //   let inFrontMoveable = Moveable.inFront();
+    //   if (inFrontMoveable instanceof Tiles) {
+    //     if (inFrontMoveable.isCut) {
+    //       print(mouseVec.xy)
+    //       DRAWMOUSEPOS = true;
+    //       return false
+    //     }
+    //     if (inFrontMoveable && !inFrontMoveable.isFrozen) {
+    //       inFrontMoveable.mouseDragged();
+    //     }
+    //   } else { // all other movables if any
+    //     if (inFrontMoveable && !inFrontMoveable.isFrozen) {
+    //       inFrontMoveable.mouseDragged();
+
+    //     }
+
+    //   }
     return false
   }// }}}
 
@@ -3339,6 +3373,7 @@ const sketch = (p5Inst) => {  // remove const sketch
   }
 
   p5Inst.mouseReleased = function() {//{{{
+    if (DYNAMICCUT) DYNAMICCUT = false;
     Array.from(Clickable.allClickables.values()).forEach(m => m.mouseReleased());
     let draggingTriangle = [...Clickable.allClickables.values()].filter(it => (it instanceof clickTriangle) && (it.isDragged));
     if ((draggingTriangle.length == 1)) {
@@ -3350,6 +3385,7 @@ const sketch = (p5Inst) => {  // remove const sketch
       let newSteps = [];
       let newStartDirection;
       if (draggingDirection == "North") {
+
         let idx = tiles.edgeOrientations.indexOf("North");
         newSteps.push(Math.abs(tiles.steps[idx]));
         newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, Number.POSITIVE_INFINITY));
