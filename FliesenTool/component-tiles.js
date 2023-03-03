@@ -2676,6 +2676,8 @@ const sketch = (p5Inst) => {  // remove const sketch
           p5Inst.pop();
 
         }
+        let verbalNumbers = ["null", "ein", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun",
+          "zehn", "elf", "zwölf", "dreizehn", "vierzehn", "fünfzehn", "sechzehn", "siebzehn", "achtzehn", "neunzehn", "zwanzig"]
         // show the triangles for resizing
         if ((this.isActive) && (this.isResizable)) {
           p5Inst.push();
@@ -2723,7 +2725,7 @@ const sketch = (p5Inst) => {  // remove const sketch
                 p5Inst.fill("#888F");
 
                 let numRows = countUnits + ((countUnits < 0) ? 1 : 0);
-                if (AppState["SHOWRESIZEEQ"]) p5Inst.text(`${numRows} • ${numCols} = ${numRows * numCols}`, edgeX, edgeY + (draggingVector.y / 2));
+                if (AppState["SHOWRESIZEEQ"]) p5Inst.text(`${verbalNumbers[numRows]} ${numCols}er`, edgeX, edgeY + (draggingVector.y / 2));
                 // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX, edgeY + (draggingVector.y / 2));
 
               } else if (draggingDirection == "East") {
@@ -2756,7 +2758,8 @@ const sketch = (p5Inst) => {  // remove const sketch
                 p5Inst.pop();
                 p5Inst.fill("#888F");
                 let numCols = countUnits + ((countUnits < 0) ? 1 : 0);
-                if (AppState["SHOWRESIZEEQ"]) p5Inst.text(`${numRows} • ${numCols} = ${numRows * numCols}`, edgeX + (draggingVector.x / 2), edgeY);
+                // if (AppState["SHOWRESIZEEQ"]) p5Inst.text(`${numRows} • ${numCols} = ${numRows * numCols}`, edgeX + (draggingVector.x / 2), edgeY);
+                if (AppState["SHOWRESIZEEQ"]) p5Inst.text(`${verbalNumbers[numRows]}  ${numCols}er`, edgeX + (draggingVector.x / 2), edgeY);
                 // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX + (draggingVector.x / 2), edgeY);
 
               } else {
@@ -3388,13 +3391,13 @@ const sketch = (p5Inst) => {  // remove const sketch
 
         let idx = tiles.edgeOrientations.indexOf("North");
         newSteps.push(Math.abs(tiles.steps[idx]));
-        newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, Number.POSITIVE_INFINITY));
+        newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, 21));
         newSteps.push(-Math.abs(tiles.steps[idx]));
         newStartDirection = "x";
 
       } else if (draggingDirection == "East") {
         let idx = tiles.edgeOrientations.indexOf("East");
-        newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, Number.POSITIVE_INFINITY));
+        newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, 21));
         newSteps.push(Math.abs(tiles.steps[idx]));
         newSteps.push(-(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, Number.POSITIVE_INFINITY)));
         newStartDirection = "x";
