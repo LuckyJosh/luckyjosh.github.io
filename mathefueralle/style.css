@@ -16,6 +16,9 @@
 /* } */
 /* Works on Firefox */
 
+:root {
+  color-scheme: light only;
+}
 
 .header-logo-mfa{
   max-height:20vh;
