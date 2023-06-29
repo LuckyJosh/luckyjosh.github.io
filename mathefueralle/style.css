@@ -16,11 +16,6 @@
 /* } */
 /* Works on Firefox */
 
-body {
-  margin:0px;
-  height:100%;
-}
-
 
 .header-logo-mfa{
   max-height:20vh;
@@ -51,7 +46,9 @@ body>header{
  /* overflow: hidden; */
 }
 
-body {
+body {  
+  margin:0px;
+  height:100%;
  display: grid;
  grid-template-columns: 2fr 6fr 2fr;
  /* min-height: 185px; */
