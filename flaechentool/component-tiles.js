@@ -6886,9 +6886,9 @@ const sketch =
                     if((numRows == 1)&&(numCols==1)){
                     description = "";
                     }else if(numRows == 1){
-                    description = `${Math.abs(numCols)} Quadrate in einer Reihe, also eine ${Math.abs(numCols)}er Reihe`;
+                    description = `${Math.abs(numCols)} Quadrate in einer Reihe, also eine ${Math.abs(numCols)}er-Reihe`;
                     }else{
-                    description =`${verbalNumbers[Math.abs(numRows)]} ${Math.abs(numCols)}er Reihen, das sind ${Math.abs(numRows)} · ${Math.abs(numCols)} Reihen`;
+                    description =`${verbalNumbers[Math.abs(numRows)]} ${Math.abs(numCols)}er-Reihen, das sind ${Math.abs(numRows)} · ${Math.abs(numCols)} Reihen`;
                     } 
                     // let textwidth = p5.textWidth(description);
                     // p5.push()
