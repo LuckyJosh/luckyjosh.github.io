@@ -83,6 +83,7 @@ const sketch =
       bSlider = p5js.createSlider(0, 1000, 100);
       bSlider.position(...canvas2Website(50, 500));
       bSlider.size(450);
+      if (params.mode == "exam-problem"){
       nSlider = p5js.createSlider(1, 300, 0);
       nSlider.position(...canvas2Website(50, 525));
       nSlider.size(450);
@@ -94,6 +95,7 @@ const sketch =
 
       //}
       //console.log(aSlider)
+      }
     }
 
     function argMatch(x0, X) {
@@ -206,8 +208,9 @@ const sketch =
 
 
         p5js.push();
-        p5js.text(`a = ${aSlider.value() / 100}`, 510, 515);
-        p5js.text(`b = ${bSlider.value() / 100}`, 510, 540);
+        
+        p5js.text(`a = ${aSlider.value() / 100}`, 510, 490);
+        p5js.text(`b = ${bSlider.value() / 100}`, 510, 515);
         p5js.pop();
       } else if (params.mode == "exam-problem") {
         xSlider.elt.max = nSlider.value();
