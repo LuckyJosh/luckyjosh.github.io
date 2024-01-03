@@ -31,7 +31,7 @@ let CONFIGURATION = {
       "frozen": false,
       "showresizeeq":false,
       "showsizedesc":true,
-      "cuttable":false
+      "cuttable":true
 
     },
     // {
