@@ -93,7 +93,7 @@ const sketch =
       // xCheckBox.position(...canvas2Website(600, 550));
 
       //}
-      console.log(aSlider)
+      // console.log(aSlider)
     }
 
     function argMatch(x0, X) {
@@ -104,12 +104,17 @@ const sketch =
     }
 
     p5js.draw = function() {
+      if (p5js.frameRate() > 1){
+
+      p5js.frameRate(Math.ceil(p5js.frameRate() * 0.8));
+      }
       //console.log(p5js.textSize());
       p5js.background("white");
       p5js.rectMode(p5js.CENTER);
       //p5js.textAlign(CENTER, CENTER);
       //
-
+      console.log(`${p5js.frameRate().toFixed(2)}`);
+     
       if (params.mode == "beta-distribution") {
         nSlider.elt.disabled = true;
         xSlider.elt.disabled = true;
@@ -220,6 +225,9 @@ const sketch =
         let n = nSlider.value();
         let x = xSlider.value();
 
+        
+        let Exp = (a + x) / (a + b + n);
+
         Y = X.map(it => betadistribution(it, aSlider.value() / 100, bSlider.value() / 100));
         Ypost = X.map(it => betadistribution(it, xSlider.value() + aSlider.value() / 100, nSlider.value() - xSlider.value() + parseInt(bSlider.value() / 100)));
         YBin = X.map(it => binomialdistribution(x, n, it));
@@ -242,6 +250,13 @@ const sketch =
         //   p5js.point(...data2Pixel(X[idx], YBin[idx]));
         // });
         //
+        
+        p5js.stroke(nord_colors.blue2);
+        p5js.strokeWeight(2);
+        // console.log("argmatch", argMatch(Exp, X), Y[argMatch(Exp, X)]);
+
+        p5js.point(...data2Pixel(Exp, 0));
+        p5js.line(...data2Pixel(Exp, 0), ...data2Pixel(Exp, Ypost[argMatch(Exp, X)]))
         p5js.stroke(nord_colors.green);
         p5js.strokeWeight(5);
         data = [...Array(X.length).keys()].map(idx => {
@@ -265,8 +280,18 @@ const sketch =
         p5js.text(`Prior: Beta(${aSlider.value() / 100},${bSlider.value() / 100})-Dichte`, 180, 30)
         p5js.fill(nord_colors.purple);
         p5js.stroke(nord_colors.purple);
-        p5js.text(`Posterior: Beta(${xSlider.value() + aSlider.value() / 100},${nSlider.value() - xSlider.value() + bSlider.value() / 100})-Dichte`, 330, 60)
+        p5js.text(`Posterior: Beta(${xSlider.value() + aSlider.value() / 100},${nSlider.value() - xSlider.value() + bSlider.value() / 100})-Dichte`, 197, 60)
         //        p5js.text(`Likelihood: Bin(${nSlider.value() / 100},${bSlider.value() / 100})-Dichte`, 175, 50)
+      //
+      
+
+        p5js.fill(nord_colors.blue2);
+        p5js.stroke(nord_colors.blue2);
+        p5js.text(`Bayes-Schätzer = ${Exp.toFixed(3)}`, 490, 60);
+        p5js.fill(nord_colors.purple);
+        p5js.stroke(nord_colors.purple);
+        p5js.text(`= a-posteriori Erwartungswert`, 515 , 80);
+
         p5js.pop();
 
 
@@ -308,6 +333,9 @@ const sketch =
       }
 
     }
+  p5js.mouseMoved = function(){
+    p5js.frameRate(30);
+  }
   };
 
 let myp5 = new p5(sketch, "sketch")
