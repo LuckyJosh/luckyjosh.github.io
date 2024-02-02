@@ -9,6 +9,7 @@ const sketch =
 
     // end: remove line
 
+
     //begin:globals {{{
     let isTouchDevice = false;
     let undoTimestamp;
@@ -16,7 +17,7 @@ const sketch =
     let draggingDirection;
     let countUnits;
     let clickMouseX, clickMouseY;
-    let undoButton;
+    let undoButton, descButton, cutButton;
     let DYNAMICCUT = false;
     let DYNAMICDRAW = false;
     let newSteps = []
@@ -43,15 +44,19 @@ const sketch =
       UNDOBUTTONLOCATION: [],
       DESCBUTTON: false,
       DESCBUTTONLOCATION: [],
-      SHOWDESK:true,
+      SHOWDESC:true,
+      ISCUTTING: false,
+      CUTSTART:undefined,
+      CUTEND:undefined,
       UNDOTREE: { STEPS: [], INDEX: -1 },
       INTERACTIVE: true,
-      ID: undefined
+      ID: undefined,
+      ISRESUMED:false
     }
 
     let AppState = defaultAppState;
-    let isResumed = [...Object.keys(lastState)].toString() == [...Object.keys(defaultAppState)].toString();
-
+    //let isResumed = [...Object.keys(lastState)].toString() == [...Object.keys(defaultAppState)].toString();
+    let isResumed = lastState["ISRESUMED"];
     p5.print("keys:", [...Object.keys(lastState)], [...Object.keys(defaultAppState)])
     if (isResumed) {
       p5.print("lastState:", lastState);
@@ -4531,7 +4536,7 @@ const sketch =
     // Definiton of 3 linesyles/ strokePatterns avialable via html5Canvas but not from p5.js 
     function strokePattern(pattern) {
       // pattern: alternating number of pixels with the "pen on" and "pen off" the canvas
-      drawingContext.setLineDash(pattern);
+      p5.drawingContext.setLineDash(pattern);
     }
     let DASHED = [5, 5];
     let DOTTED = [2];
@@ -4724,6 +4729,10 @@ const sketch =
         Moveable.allMoveables.push(this);
       }
 
+      pointInArea(point) {
+        throw new Error("Abstract Method has to be implemented");
+      }
+
       mouseInArea() {
         throw new Error("Abstract Method has to be implemented");
       }
@@ -4731,6 +4740,8 @@ const sketch =
       updateReferencePoint(dx, dy) {
         throw new Error("Abstract Method has to be implemented");
       }
+      
+    
 
       get referencePoint() {
         throw new Error("Abstract Method has to be implemented");
@@ -4739,7 +4750,6 @@ const sketch =
       set referencePoint(vector) {
         throw new Error("Abstract Method has to be implemented");
       }
-
 
       mousePressed() {
 
@@ -5019,7 +5029,10 @@ const sketch =
     function isClose(value1, value2, abseps = 1e-6) {
       return abs(value1 - value2) < abseps
     }
-
+    
+  function rangeArray(start, stop, step){
+  return Array.from({ length: (stop - start) / step + 1 }, (_, i) => start + i * step);
+  }
 
     function withContexts(contexts, buffer = undefined) {// {{{
       if (isString(contexts)) { contexts = [contexts]; }
@@ -5839,8 +5852,40 @@ const sketch =
       SN: "South->North",
       NS: "North->South",
       WE: "West->East",
-      EW: "East->West"
+      EW: "East->West",
     }
+    
+  function lineLocationDirection(start, end){
+    let dir = undefined;
+    let delta = vsub(end, start);
+    let ex = p5.createVector(1,0,0); 
+    let angle = ex.angleBetween(delta);
+    let abs_angle =  abs(angle);
+    let epsAngle = 0.05;
+    // p5.print("dotprod:", ex.angleBetween(delta));
+    // p5.print("1:v", abs(abs_angle - p5.PI/2));
+    // p5.print("2:h", abs(abs_angle - p5.PI),abs_angle);
+    if (abs(abs_angle - p5.PI/2) < epsAngle ) dir = "vertical";
+    if ((abs(abs_angle - p5.PI) < epsAngle) || ((abs_angle) < epsAngle )) dir = "horizontal";
+    
+    let isStartEast = start.x < end.x;
+    let isStartNorth = start.y < end.y;
+    let res = undefined; 
+    if (dir == "horizontal"){ 
+      res = {
+        dir : (isStartEast)? DIRECTIONS.EW:DIRECTIONS.WE,
+      loc:(start.y + end.y)/2
+      }
+    }
+    if (dir == "vertical"){
+     res = {
+        dir : (isStartNorth)? DIRECTIONS.NS:DIRECTIONS.SN,
+      loc : (start.x + end.x)/2
+      }
+    }
+
+    return res 
+  }
 
 
     function flipDirection(direction) {
@@ -6264,6 +6309,8 @@ const sketch =
           Tiles.updateTiles(this);
         }
         Tiles.allTiles.sort((a, b) => a.zorder - b.zorder)
+
+
       }//}}}
 
       serialize() {
@@ -6548,6 +6595,22 @@ const sketch =
         }
         return isInside
       }
+      pointInArea(point,extended = false) {
+        let onPolygon = p5.collidePointPoly(point.x, point.y, this.verts)
+        let isInside = onPolygon;
+        // print(`Label:${this.label}; onPolygon: ${onPolygon}`)
+        // if (!isInside && this.isResizable) {
+        //   let onControls = any(Object.values(this.dragTriangles).map(it => it.hitbox.mouseInArea()));
+        //   print(`Label:${this.label};onControls: ${onControls}`);
+        //   isInside = isInside || onControls;
+        // }
+        if (!isInside && extended) {
+          isInside = p5.collidePointCircle(point.x, point.y,
+            ...(this.step2Vert()(this.boundingBoxCenter)).xy,
+            2.1 * Math.max(...this.verts.map(jt => vnorm(vsub(jt, this.step2Vert()(this.boundingBoxCenter))))))
+        }
+        return isInside
+      }
 
       updateReferencePoint(dx, dy) {
         return p5.createVector(dx, dy)
@@ -6573,24 +6636,111 @@ const sketch =
         }
       }//}}}
 
-      handleCutting() {
+      handleCutting(cutLineLocDir) {
         if (this.isEmpty || !this.isCuttable) return
         let mouse = p5.mouseVec();
-        if (this.isCut) {
-          let canclePos = this.step2Vert()(this.currentCut[0]);
-          let lastPos = this.step2Vert()(this.currentCut[this.currentCut.length - 1]);
-          // print("befor if:", vsub(mouse, canclePos).mag(), 0.25 * this.pixelUnit);
-          if (vsub(mouse, canclePos).mag() < 0.5 * this.pixelUnit) {
+        p5.print("HANDLE CUTTING");
+        p5.print("handleCutting():", cutLineLocDir);
+        this.isCut = true;
 
-            this.currentCut = [];
-            //@improvement:  :AVAILABELCUTS:
-            this.availableCuts = this.edgePoints.filter(it => !any(this.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
-            this.isCut = false;
-            return
-          }
-          if ((this.availableCuts.length == 0) && (vsub(mouse, lastPos).mag() < 0.25 * this.pixelUnit)) {
+      let endPoint = p5.mouseVec();
+      if (AppState["CUTEND"] != undefined) endPoint = AppState["CUTEND"];
+
+      let cutLineVec = vunit(vsub(endPoint,AppState["CUTSTART"]));
+      let edgePointProjections = [];
+      let edgePointProjectionDistances = [];
+      this.edgePoints
+        .map(p => this.step2Vert()(p))
+        .forEach((p)=>{
+        let vec2Edge = vsub(p, AppState["CUTSTART"]);
+        let proj = vadd(AppState["CUTSTART"],
+        vmult(cutLineVec, vdot(cutLineVec, vec2Edge)));
+        edgePointProjections.push(proj);  
+        edgePointProjectionDistances.push(vdist(proj, p));
+        //p5.circle(...p.xy,10);
+      })//filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
+      
+        //@refactor: argSort would be nice
+      let cutEdgePoints = []
+      let firstIdx = argMin(edgePointProjectionDistances);
+      cutEdgePoints.push({
+        idx: firstIdx,
+        dist: edgePointProjectionDistances[firstIdx]
+      })
+    
+      // @hack: this is a very bad hack
+      edgePointProjectionDistances[firstIdx] += 1000;
+      let secondIdx = argMin(edgePointProjectionDistances);
+      let secondEdgePoint = {
+        idx: secondIdx,
+        dist: edgePointProjectionDistances[secondIdx]
+      }
+      if (cutEdgePoints[0].idx < secondEdgePoint.idx){
+        cutEdgePoints.push(secondEdgePoint);
+      }else{
+        cutEdgePoints.unshift(secondEdgePoint);
+      }
+      p5.print(edgePointProjections, edgePointProjectionDistances, cutEdgePoints);
+      
+      // the edge points should not be neighbors
+      if (abs(cutEdgePoints[0].idx - cutEdgePoints[1].idx) == 1) return
+      p5.print("not neighbors");
+      
+    
+      
+      //@todo: unnecessary
+         // if (AppState["ISCUTTING"] && AppState["CUTEND"] != undefined) {
+        //   let canclePos = this.step2Vert()(this.currentCut[0]);
+        //   let lastPos = this.step2Vert()(this.currentCut[this.currentCut.length - 1]);
+        //   // print("befor if:", vsub(mouse, canclePos).mag(), 0.25 * this.pixelUnit);
+        //   if (vsub(mouse, canclePos).mag() < 0.5 * this.pixelUnit) {
+        //
+        //     this.currentCut = [];
+        //     //@improvement:  :AVAILABELCUTS:
+        //     this.availableCuts = this.edgePoints.filter(it => !any(this.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
+        //     this.isCut = false;
+        //     return
+        //   }
+
+        // find if cut is possible i.e. is the cutline between dots 
+        // close enough to edgepoints  
+
+
+        
+      // perform the cut
+          if ((cutEdgePoints[0].dist + cutEdgePoints[1].dist)/2 < (this.pixelUnit*0.95)/2) {
+          this.currentCut = [];
+
+            let edgePoint0 = this.edgePoints[cutEdgePoints[0].idx];
+            let edgePoint1 = this.edgePoints[cutEdgePoints[1].idx];
+        let change = 0;
+        let splitOffset = undefined;
+        p5.print("edgePoint0/1:", edgePoint0, edgePoint1);
+          if (cutLineLocDir.dir == DIRECTIONS.EW || cutLineLocDir == DIRECTIONS.WE){ // horizontal cut
+            if (edgePoint0[1] !=  edgePoint1[1]) throw new Error("Should have the same yvalue!")
+             change = Math.sign(edgePoint1[0] - edgePoint0[0]);
+          p5.print(rangeArray(edgePoint0[0],edgePoint1[0], change));
+            rangeArray(edgePoint0[0],edgePoint1[0], change).forEach(x => {
+
+            this.currentCut.push([x, edgePoint0[1]]);
+          })
+          splitOffset = [0, -5];
+        } else if (cutLineLocDir.dir == DIRECTIONS.NS || cutLineLocDir == DIRECTIONS.SN){ // vertical cut
+            if (edgePoint0[0] !=  edgePoint1[0]) throw new Error("Should have the same xvalue!")
+             change = Math.sign(edgePoint1[1] - edgePoint0[1]);
+          p5.print(rangeArray(edgePoint0[1],edgePoint1[1], change));
+            rangeArray(edgePoint0[1],edgePoint1[1], change).forEach(y => {
+
+            this.currentCut.push([edgePoint0[0], y]);
+          })
+
+          splitOffset = [5, 0];
+        }
+
+        p5.print("currentCut", this.currentCut);
 
             // @FIX: not all edgePoints are labeled with the (X) and some split parts are rotated (direction issue)
+        //
             let [ci, cf] = [this.currentCut[0], this.currentCut[this.currentCut.length - 1]];
             let [ciStepIdx, cfStepIdx] = [ci, cf].map(c => this.edgePoints.findIndex(it => it.toString() == c.toString()));
             let [cMinStepIdx, cMaxStepIdx] = ([ciStepIdx, cfStepIdx]).sort((a, b) => a - b);
@@ -6647,7 +6797,10 @@ const sketch =
             }
             if (DEBUGMODE) print("axis:", axis);
             let loc2 = this.step2Vert()(this.currentCut[(!cutIsReversed) ? (this.currentCut.length - 1) : 0]);
+        p5.print("loc2", loc2);
 
+            loc2.add(p5.createVector(...splitOffset))
+            p5.print("loc2", loc2);
             Tiles.createTiles(loc2,
               edgePoints2Steps(secondPart),
               axis,
@@ -6674,7 +6827,8 @@ const sketch =
             // let delIdxM = Moveable.allMoveables.findIndex(it => it.label == this.label);
             // Tiles.allTiles.splice(delIdxT, 1);
             // Moveable.allMoveables.splice(delIdxM, 1);
-
+            AppState["CUTSTART"] = undefined;
+            AppState["CUTEND"] = undefined;
             return
 
           }
@@ -6689,7 +6843,7 @@ const sketch =
             }
           }
 
-        }
+        //}
         if (this.availableCuts.length > 0) {
 
           let distances2AvailablePoints = this.availableCuts.map(this.step2Vert()).map((p) => vsub(p, mouse).mag());
@@ -6868,7 +7022,7 @@ const sketch =
           // show the triangles for resizing
         //
           function drawSizeDescription(T, changeNumCols=0, changeNumRows=0, direction){
-              if (!AppState.SHOWDESK) return
+              if (!AppState.SHOWDESC) return
               let numCols = abs(T.steps[T.startDirOffset]) + (changeNumCols);
               let numRows = abs(T.steps[T.startDirOffset + 1]) + (changeNumRows);
               let [edgeX, edgeY] = (T.step2Vert()([T.boundingBoxCenter[0],1])).xy;//vmult(T.edges.reduce((c,it)=> vadd(c,it), p5.createVector(0, 0)), 0.25).xy;
@@ -7309,37 +7463,41 @@ const sketch =
             p5.pop();
           }// }}}
 
+          
+          //@todo: not necessary any more
           // @refactor: add parameter/config for (un)cutabel?
-          // show the available cut Points
-          if ((this.isActive) && (!this.isEmpty) && this.isCuttable) {
-            this.availableCuts.map(this.step2Vert()).forEach(
-              (vert, i) => {
-                p5.push();
-
-                p5.fill("#A009");
-                p5.stroke("#A009");
-                p5.circle(...vert.xy, 5);
-                p5.pop();
-              })
-          }
+          // draw the available cut Points
+          // if ((this.isActive) && (!this.isEmpty) && this.isCuttable) {
+          //   this.availableCuts.map(this.step2Vert()).forEach(
+          //     (vert, i) => {
+          //       p5.push();
+          //
+          //       p5.fill("#A009");
+          //       p5.stroke("#A009");
+          //       p5.circle(...vert.xy, 5);
+          //       p5.pop();
+          //     })
+          // }
           // display abort 'button'
 
-          let lastvert;
-          this.currentCut.map(this.step2Vert()).forEach(
-            (vert, i) => {
-              p5.push();
-
-              p5.fill("#A009");
-              p5.stroke("#A009");
-              p5.circle(...vert.xy, 5);
-
-              if ((i > 0)) {
-                p5.line(...lastvert.xy, ...vert.xy);
-              }
-              lastvert = vert;
-              p5.pop();
-
-            })
+          //@todo: not necessary any more
+          //Draw the current cut
+          //let lastvert;
+          // this.currentCut.map(this.step2Vert()).forEach(
+          //   (vert, i) => {
+          //     p5.push();
+          //
+          //     p5.fill("#0A09");
+          //     p5.stroke("#0A09");
+          //     p5.circle(...vert.xy, 5);
+          //
+          //     if ((i > 0)) {
+          //       p5.line(...lastvert.xy, ...vert.xy);
+          //     }
+          //     lastvert = vert;
+          //     p5.pop();
+          //
+          //   })
 
           if (DEBUGMODE) {
             // Numbering of innerTiles
@@ -7661,33 +7819,35 @@ const sketch =
           // vdraw(p5Inst.createVector(100, 200, 0), 5, "#A1D5");
           // p5Inst.pop();
 
+          
+          //@todo: not necessary any more
           // Drawing the features of the cut line
-          if (this.isCut) {
-            let pos = this.step2Vert()(this.currentCut[0]);
-            p5.push();
-
-            p5.fill("#C00");
-            p5.stroke("#C00");
-            p5.circle(...pos.xy, 20);
-            p5.stroke("#000");
-            p5.fill("#000");
-            p5.strokeWeight(2);
-            p5.textAlign(p5.CENTER, p5.CENTER);
-
-            p5.text("✗", ...pos.xy);
-            if (this.availableCuts.length == 0) {
-              let pos = this.step2Vert()(this.currentCut[this.currentCut.length - 1]);
-              p5.fill("#0C0");
-              p5.stroke("#0C0");
-              p5.circle(...pos.xy, 20);
-              p5.stroke("#000");
-              p5.fill("#000");
-              p5.strokeWeight(2);
-              p5.textAlign(p5.CENTER, p5.CENTER);
-              p5.text("✓", ...pos.xy);
-            }
-            p5.pop();
-          }
+          // if (this.isCut) {
+          //   let pos = this.step2Vert()(this.currentCut[0]);
+          //   p5.push();
+          //
+          //   p5.fill("#C00");
+          //   p5.stroke("#C00");
+          //   p5.circle(...pos.xy, 20);
+          //   p5.stroke("#000");
+          //   p5.fill("#000");
+          //   p5.strokeWeight(2);
+          //   p5.textAlign(p5.CENTER, p5.CENTER);
+          //
+          //   p5.text("✗", ...pos.xy);
+          //   if (this.availableCuts.length == 0) {
+          //     let pos = this.step2Vert()(this.currentCut[this.currentCut.length - 1]);
+          //     p5.fill("#0C0");
+          //     p5.stroke("#0C0");
+          //     p5.circle(...pos.xy, 20);
+          //     p5.stroke("#000");
+          //     p5.fill("#000");
+          //     p5.strokeWeight(2);
+          //     p5.textAlign(p5.CENTER, p5.CENTER);
+          //     p5.text("✓", ...pos.xy);
+          //   }
+          //   p5.pop();
+          // }
           if (this.isDrawable) {
             let currentColor = this.drawColors[0];
             //let colors = [];
@@ -8060,6 +8220,9 @@ const sketch =
          }
       return a
     }
+
+
+
     p5.setup = function() {// {{{
       p5.randomSeed(123456789);
       // Set global variables
@@ -8081,7 +8244,7 @@ const sketch =
       if (!validOption(initialConfig, "undobutton", [true, false])) initialConfig.undobutton = true;
       if (!validOption(initialConfig, "interactive", [true, false])) initialConfig.interactive = true;
       if (initialConfig.undobuttonlocation == undefined) {
-        initialConfig.undobuttonlocation = canvasBuffer.rF.P(0.98, 0.03).xy
+        initialConfig.undobuttonlocation = canvasBuffer.rF.P(0.02, 0.13).xy
       } else {
         let [x, y] = initialConfig.undobuttonlocation;
         initialConfig.undobuttonlocation = canvasBuffer.rF.P(x, y).xy;
@@ -8103,6 +8266,8 @@ const sketch =
         AppState["UNDOBUTTONLOCATION"] = initialConfig.undobuttonlocation;
         AppState["DESCBUTTON"] = true;
         AppState["DESCBUTTONLOCATION"] = canvasBuffer.rF.P(0.02, 0.03).xy;
+        AppState["CUTBUTTON"] = true;
+        AppState["CUTBUTTONLOCATION"] = canvasBuffer.rF.P(0.02, 0.08).xy;
         AppState["UNDOTREE"] = { STEPS: [], INDEX: -1 };
         AppState["INTERACTIVE"] = initialConfig.interactive;
         AppState["ID"] = initialConfig.id;
@@ -8153,6 +8318,7 @@ const sketch =
 
       undoButton = new clickCircle(...AppState["UNDOBUTTONLOCATION"], 35, null, "undoButton");
       descButton = new clickCircle(...AppState["DESCBUTTONLOCATION"], 35, null, "descButton");
+      cutButton = new clickCircle(...AppState["CUTBUTTONLOCATION"], 35, null, "cutButton");
 
       // Tiles.createTiles(canvasBuffer.rF.P(0.5, 0.5), [-1, -3, 4, -2, 1, 4, 4, -1, 1, 3], "x", [0.025, 1, "cm"], false, true);
       // Tiles.createTiles(canvasBuffer.rF.P(0.5, 0.5), [-1, -3, 4, -2, 1, 4, 4, -1, 1, 3], "x", [0.025, 1, "cm"], false, true);
@@ -8178,8 +8344,8 @@ const sketch =
 
     p5.getDivomathVarState = () => {
       if (!AppState["ALWAYSRELOAD"]) {
-
         AppState["TILES"] = Tiles.serialize();
+        AppState["ISRESUMED"] = true;
         // Tiles.allTiles.map(it => {
         //   let tilesState = {}
         //   if (it.isDrawable) tilesState = it.state;
@@ -8334,7 +8500,7 @@ const sketch =
 
         p5.textSize(8);
         p5.fill("#AAA");
-        if (!AppState.SHOWDESK) {
+        if (!AppState.SHOWDESC) {
           p5.stroke("#AAAD");
           p5.fill("#AAAD");
         
@@ -8342,7 +8508,60 @@ const sketch =
         };
         p5.pop();
       }
+      if (AppState["CUTBUTTON"]) {
+        p5.push();
+        p5.fill("#AAA6");
+        p5.circle(...cutButton.circle);
+        p5.fill("#333");
+        p5.textAlign("center", "center")
+        p5.textSize(36);
+        p5.textStyle("bold");
+        //p5.text("✄", cutButton.x, cutButton.y);
+        p5.text("✂", cutButton.x, cutButton.y+3);
 
+        p5.textSize(8);
+        p5.fill("#AAA");
+         if (!AppState.ISCUTTING) {
+           p5.stroke("#AAAD");
+           p5.fill("#AAAD");
+           p5.circle(...cutButton.circle)
+         };
+        p5.pop();
+      }
+
+      if ((AppState["ISCUTTING"] && AppState["CUTSTART"] != undefined)){
+
+      let endPoint = p5.mouseVec();
+      if (AppState["CUTEND"] != undefined) endPoint = AppState["CUTEND"];
+
+      p5.push();
+      p5.push();
+      p5.stroke("#555");
+      p5.strokeWeight(2);
+      strokePattern(DASHED)
+      p5.line(...AppState["CUTSTART"].xy,...endPoint.xy);
+      //p5.print(lineLocationDirection(AppState["CUTSTART"],endPoint))
+      p5.fill("#595");
+      p5.circle(...vmult(vadd(AppState["CUTSTART"],endPoint),0.5).xy,10);
+      p5.pop();
+      let cutTile = Moveable.allMoveables.filter(m=>m.isCut);
+
+      let cutLineVec = vunit(vsub(endPoint,AppState["CUTSTART"]));
+      let vec2Edge = undefined;
+      let vec2EdgeNorm = undefined;
+      let proj = undefined;
+      if ((cutTile != undefined) && (cutTile.length > 0)){
+      cutTile[0].edgePoints.map(p => cutTile[0].step2Vert()(p))
+        .forEach((p)=>{
+        p5.circle(...p.xy, 4);
+        vec2Edge = vsub(p, AppState["CUTSTART"]);
+        proj = vadd(AppState["CUTSTART"], vmult(cutLineVec, vdot(cutLineVec, vec2Edge)))
+        p5.circle(...proj.xy, 5);
+        //p5.circle(...p.xy,10);
+      })//filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
+      }
+      p5.pop();
+      }
       // print(p5Inst.mouseVec())
       // let T = Tiles.allTiles[Tiles.allTiles.length - 1];
       // if (T.currentCut.length > 0) {
@@ -8450,14 +8669,15 @@ const sketch =
         Array.from(Clickable.allClickables.values()).forEach(m => m.mousePressed());
 
 
-        let clickTargets = [...Moveable.allMoveables.map(m => !m.isClicked), ...[...Clickable.allClickables.values()].map(m => !m.isClicked)];
+        let clickTargets = [...Moveable.allMoveables.map(m => !m.mouseInArea()), ...[...Clickable.allClickables.values()].map(m => !m.isClicked)];
         if (prod(clickTargets) == 1) Moveable.allMoveables.forEach(m => {
-          if (m.isCuttable && m.isCut && m.currentCut.length < 2) {
-            // copy-paste from handleCutting()
-            m.currentCut = [];
-            m.availableCuts = m.edgePoints.filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
-            m.isCut = false;
-          }
+        // @todo: unnecessar
+          // if (m.isCuttable && m.isCut && m.currentCut.length < 2) {
+          //   // copy-paste from handleCutting()
+          //   m.currentCut = [];
+          //   m.availableCuts = m.edgePoints.filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
+          //   m.isCut = false;
+          // }
           m.isActive = false;
         });
 
@@ -8477,13 +8697,66 @@ const sketch =
           print("###AppState:")
           print(AppState)
         }
-        if (AppState["UNDOBUTTON"] && undoButton.isClicked) {
+        
+      if (AppState["UNDOBUTTON"] && undoButton.isClicked) {
 
           loadUndoStep()
         }
         if (AppState["DESCBUTTON"] && descButton.isClicked) {
-        AppState["SHOWDESK"] = !AppState["SHOWDESK"] ;
+        AppState["SHOWDESC"] = !AppState["SHOWDESC"] ;
+        }
+
+      let activatedCutting = false;
+        if(AppState["CUTBUTTON"] && cutButton.isClicked) {
+        AppState["ISCUTTING"] = !AppState["ISCUTTING"] ;
+        AppState["CUTSTART"] = undefined;
+        AppState["CUTEND"] = undefined;
+        activatedCutting = true;
+
+
+        }
+      // Clicks inside of dotarrays or bottons do not count
+        let numCutClicks = -1;
+      if (prod(clickTargets) ==1){
+
+        if (! activatedCutting) {
+        if (AppState["ISCUTTING"]){
+          numCutClicks = 0;
+          if (AppState["CUTSTART"] != undefined) numCutClicks += 1;
+          if (AppState["CUTEND"] != undefined) numCutClicks += 1;
+        }
+        }
+        p5.print("numCutClicks", numCutClicks);
+
+
+        if((numCutClicks == 0)){
+          AppState["CUTSTART"] = p5.mouseVec();
+        }else if (numCutClicks == 1){
+          AppState["CUTEND"] = p5.mouseVec();
+        } else if (numCutClicks == 2){
+          AppState["CUTSTART"] = undefined;
+          AppState["CUTEND"] = undefined;
+          numCutClicks = -1;
+        }
       }
+      // handle the cutting of tiles
+      if (numCutClicks > 0){
+        let endPoint = p5.mouseVec();
+        if (AppState["CUTEND"] != undefined) endPoint = AppState["CUTEND"];
+        let centerCutline = vmult(vadd(AppState["CUTSTART"],endPoint),0.5);
+        // @refactor: maybe the is not good enough
+        let cutTile = Moveable.allMoveables.filter(m => (m instanceof Tiles) && (m.pointInArea(centerCutline)))[0];
+        let cutLineLocDir = lineLocationDirection(AppState["CUTSTART"],endPoint);
+        
+        p5.print("handleCutting",cutTile);
+        
+        if (cutLineLocDir != undefined){
+          cutTile.handleCutting(cutLineLocDir);
+        }
+        // if (inFrontMoveable.isCuttable) inFrontMoveable.handleCutting();
+      }
+
+
 
         let inFrontMoveable = Moveable.inFront();
         let allDragTriangles = Tiles.allTiles
@@ -8504,8 +8777,9 @@ const sketch =
             // print("##################");
             Moveable.allMoveables.forEach(m => m.isActive = false)
             inFrontMoveable.isActive = true;
-            if (inFrontMoveable.isCuttable) inFrontMoveable.handleCutting();
-            if (inFrontMoveable.isDrawable) inFrontMoveable.handleDrawing();
+            // @todo: not necessary anymore
+            //if (inFrontMoveable.isCuttable) inFrontMoveable.handleCutting();
+            //if (inFrontMoveable.isDrawable) inFrontMoveable.handleDrawing();
           }
           // if (!startedCut) {
 
@@ -8515,6 +8789,7 @@ const sketch =
 
 
       }
+      p5.print("AppState:", AppState)
       return undefined
     }//}}}
     p5.mouseDragged = function() {// {{{

@@ -11,19 +11,19 @@ let CONFIGURATION = {
   // "interactive": false,
   "id": 1,
   "tiles": [
-    {
-      "location": [0.5, 0.5],
-      "steps": [1, -1, -1],
-      "startdirection": "x",
-      "unit": [0.025, 1, "cm"],
-      "empty": true,
-      "resizable":true,
-      "edgelabels": false,
-      "frozen": false,
-    },
+    // {
+    //   "location": [0.5, 0.5],
+    //   "steps": [1, -1, -1],
+    //   "startdirection": "x",
+    //   "unit": [0.025, 1, "cm"],
+    //   "empty": true,
+    //   "resizable":true,
+    //   "edgelabels": false,
+    //   "frozen": false,
+    // },
     {
       "location": [0.2, 0.5],
-      "steps": [1, 1, -1],
+      "steps": [5, 5, -5],
       "startdirection": "x",
       "unit": [0.025, 1, "cm"],
       "empty": false,
@@ -32,8 +32,20 @@ let CONFIGURATION = {
       "showresizeeq":false,
       "showsizedesc":true,
       "cuttable":true
-
     },
+    // {
+    //   "location": [0.2, 0.5],
+    //   "steps": [1, 1, -1],
+    //   "startdirection": "x",
+    //   "unit": [0.025, 1, "cm"],
+    //   "empty": false,
+    //   "edgelabels": false,
+    //   "frozen": false,
+    //   "showresizeeq":false,
+    //   "showsizedesc":true,
+    //   "cuttable":true
+    //
+    // },
     // {
     //   "location": [0.7, 0.5],
     //   "steps": [9, -2, -3, -2, -2, -2, -2, +2, -2],
