@@ -1,11 +1,14 @@
+const APPMODE = "CUTTING";
 const sketch =
+
   (p5) => {  // remove const sketch 
     //begin: remove lines
+
     p5.getDivomathConfig = function() { return DivomathConfig() }  //remove line
     p5.getDivomathPreviousSubmission = function() { return DivomathPreviousSubmission }
     p5.sendDivomathResult = function() { return sendDivomathResult }
     p5.getDivomathVarState = () => state;
-    p5.newCanvas = () => { return p5.createCanvas(innerWidth*0.975, innerHeight*0.96) };
+    p5.newCanvas = () => { return p5.createCanvas(innerWidth * 0.975, innerHeight * 0.96) };
 
     // end: remove line
 
@@ -17,7 +20,7 @@ const sketch =
     let draggingDirection;
     let countUnits;
     let clickMouseX, clickMouseY;
-    let undoButton, descButton, cutButton;
+    let undoButton, redoButton, descButton, cutButton;
     let DYNAMICCUT = false;
     let DYNAMICDRAW = false;
     let newSteps = []
@@ -44,14 +47,14 @@ const sketch =
       UNDOBUTTONLOCATION: [],
       DESCBUTTON: false,
       DESCBUTTONLOCATION: [],
-      SHOWDESC:true,
+      SHOWDESC: true,
       ISCUTTING: false,
-      CUTSTART:undefined,
-      CUTEND:undefined,
+      CUTSTART: undefined,
+      CUTEND: undefined,
       UNDOTREE: { STEPS: [], INDEX: -1 },
       INTERACTIVE: true,
       ID: undefined,
-      ISRESUMED:false
+      ISRESUMED: false
     }
 
     let AppState = defaultAppState;
@@ -4706,9 +4709,11 @@ const sketch =
     class Moveable {// {{{
       static allMoveables = [];
       static moveableCount = 0;
-      static inFront() {
+      static inFront(conditions) {
+        let cond = conditions || ((it) => true)
         let moved = Moveable.allMoveables
           .filter(m => m.mouseInArea())
+          .filter(cond)
           // .filter(m => !m.isFrozen)
           .sort((a, b) => b.zorder - a.zorder)[0]
         return moved
@@ -4733,6 +4738,10 @@ const sketch =
         throw new Error("Abstract Method has to be implemented");
       }
 
+      lineInArea(startPoint, endPoint) {
+        throw new Error("Abstract Method has to be implemented");
+      }
+
       mouseInArea() {
         throw new Error("Abstract Method has to be implemented");
       }
@@ -4740,8 +4749,8 @@ const sketch =
       updateReferencePoint(dx, dy) {
         throw new Error("Abstract Method has to be implemented");
       }
-      
-    
+
+
 
       get referencePoint() {
         throw new Error("Abstract Method has to be implemented");
@@ -5029,10 +5038,18 @@ const sketch =
     function isClose(value1, value2, abseps = 1e-6) {
       return abs(value1 - value2) < abseps
     }
-    
-  function rangeArray(start, stop, step){
-  return Array.from({ length: (stop - start) / step + 1 }, (_, i) => start + i * step);
-  }
+
+    function rangeArray(start, stop, step) {
+      return Array.from({ length: (stop - start) / step + 1 }, (_, i) => start + i * step);
+    }
+    function arrayPartition(array, length) {
+      var result = [];
+      for (var i = 0; i < array.length; i++) {
+        if (i % length === 0) result.push([]);
+        result[result.length - 1].push(array[i]);
+      }
+      return result;
+    };
 
     function withContexts(contexts, buffer = undefined) {// {{{
       if (isString(contexts)) { contexts = [contexts]; }
@@ -5854,38 +5871,38 @@ const sketch =
       WE: "West->East",
       EW: "East->West",
     }
-    
-  function lineLocationDirection(start, end){
-    let dir = undefined;
-    let delta = vsub(end, start);
-    let ex = p5.createVector(1,0,0); 
-    let angle = ex.angleBetween(delta);
-    let abs_angle =  abs(angle);
-    let epsAngle = 0.05;
-    // p5.print("dotprod:", ex.angleBetween(delta));
-    // p5.print("1:v", abs(abs_angle - p5.PI/2));
-    // p5.print("2:h", abs(abs_angle - p5.PI),abs_angle);
-    if (abs(abs_angle - p5.PI/2) < epsAngle ) dir = "vertical";
-    if ((abs(abs_angle - p5.PI) < epsAngle) || ((abs_angle) < epsAngle )) dir = "horizontal";
-    
-    let isStartEast = start.x < end.x;
-    let isStartNorth = start.y < end.y;
-    let res = undefined; 
-    if (dir == "horizontal"){ 
-      res = {
-        dir : (isStartEast)? DIRECTIONS.EW:DIRECTIONS.WE,
-      loc:(start.y + end.y)/2
-      }
-    }
-    if (dir == "vertical"){
-     res = {
-        dir : (isStartNorth)? DIRECTIONS.NS:DIRECTIONS.SN,
-      loc : (start.x + end.x)/2
-      }
-    }
 
-    return res 
-  }
+    function lineLocationDirection(start, end) {
+      let dir = undefined;
+      let delta = vsub(end, start);
+      let ex = p5.createVector(1, 0, 0);
+      let angle = ex.angleBetween(delta);
+      let abs_angle = abs(angle);
+      let epsAngle = 0.05;
+      // p5.print("dotprod:", ex.angleBetween(delta));
+      // p5.print("1:v", abs(abs_angle - p5.PI/2));
+      // p5.print("2:h", abs(abs_angle - p5.PI),abs_angle);
+      if (abs(abs_angle - p5.PI / 2) < epsAngle) dir = "vertical";
+      if ((abs(abs_angle - p5.PI) < epsAngle) || ((abs_angle) < epsAngle)) dir = "horizontal";
+
+      let isStartEast = start.x < end.x;
+      let isStartNorth = start.y < end.y;
+      let res = undefined;
+      if (dir == "horizontal") {
+        res = {
+          dir: (isStartEast) ? DIRECTIONS.EW : DIRECTIONS.WE,
+          loc: (start.y + end.y) / 2
+        }
+      }
+      if (dir == "vertical") {
+        res = {
+          dir: (isStartNorth) ? DIRECTIONS.NS : DIRECTIONS.SN,
+          loc: (start.x + end.x) / 2
+        }
+      }
+
+      return res
+    }
 
 
     function flipDirection(direction) {
@@ -5993,7 +6010,7 @@ const sketch =
 
       static allTiles = [];
       static fillColor = "#DDDDDD";
-      static createTiles(location, steps, startDirection = "x", unit = [0.05, 1, "cm"], options, resumedState) {
+      static createTiles(location, steps, startDirection = "x", unit = [0.05, 1, "cm"], options, resumedState, firstinnercenters) {
         // print(`resumedState:`, resumedState);
         let defaultOptions = {
           empty: false,
@@ -6002,7 +6019,7 @@ const sketch =
           edgelabelpadding: null,
           frozen: false,
           zorder: null,
-          resize: true,
+          resize: "NESW",
           resizecolor: "#CCC3",
           showresizeeq: false,
           showsizedesc: false,
@@ -6012,9 +6029,11 @@ const sketch =
           drawlinelocation: [0.2, 0.8],
           drawcolor: "#963BD8",
           fillcolor: null,
+          starterfillcolor: null,
           fillstriped: null,
           edgecolor: null,
-          label: null
+          label: null,
+          synced: []
         }
         let definedOptions = {}
         if (options != undefined) {
@@ -6028,6 +6047,35 @@ const sketch =
         let opt = { ...defaultOptions, ...definedOptions };
         // print("final:", opt);
         // console.table(opt);
+        p5.print("create New Tiles:", [
+          location,
+          steps,
+          startDirection,
+          unit,
+          opt.empty,
+          opt.edgelabels,
+          opt.edgelabelfontsize,
+          opt.edgelabelpadding,
+          opt.frozen,
+          opt.zorder,
+          opt.resize,
+          opt.resizecolor,
+          opt.showresizeeq,
+          opt.showsizedesc,
+          opt.cuttable,
+          opt.drawable,
+          opt.showdrawableline,
+          opt.drawlinelocation,
+          opt.drawcolor,
+          opt.fillcolor,
+          opt.starterfillcolor,
+          opt.fillstriped,
+          opt.edgecolor,
+          opt.label,
+          opt.synced,
+          resumedState,
+          firstinnercenters
+        ]);
         return new Tiles(
           location,
           steps,
@@ -6049,10 +6097,13 @@ const sketch =
           opt.drawlinelocation,
           opt.drawcolor,
           opt.fillcolor,
+          opt.starterfillcolor,
           opt.fillstriped,
           opt.edgecolor,
           opt.label,
-          resumedState
+          opt.synced,
+          resumedState,
+          firstinnercenters
         );
       }
 
@@ -6090,13 +6141,17 @@ const sketch =
         drawlinelocation,
         drawcolor,
         fillcolor,
+        starterfillcolor,
         fillstriped,
         edgecolor,
         label,
-        resumedState) {//{{{
+        synced,
+        resumedState,
+        starterindices) {//{{{
 
         super(label);
-        resize = (resize == undefined) ? true : resize;
+        resize = (resize == undefined) ? "NESW" : resize;
+        p5.print("constructor:resize", resize);
         this.loc = location;
         this.startDirection = startDirection;// for use in the arguments of the childern after splitting
         this.unit = unit;// for use in the arguments of the childern after splitting
@@ -6180,7 +6235,18 @@ const sketch =
 
         this.isRectangle = (this.steps.length == 4);
 
-        this.isResizable = this.isRectangle && resize; //&& !empty;
+
+        this.isResizable = (this.isRectangle && resize) ? resize : false; //&& !empty;
+        this.rectSideLengths = undefined;
+        if (this.isRectangle) {
+          let xlength = this.stepVerts[1][0] || this.stepVerts[3][0];
+          let ylength = this.stepVerts[1][1] || this.stepVerts[3][1];
+          this.rectSideLengths = { x: abs(xlength), y: abs(ylength) }
+          let area = abs(xlength * ylength);
+
+          this.starterIndices = (starterindices || arrayPartition([...Array(area).keys()], this.rectSideLengths.x));
+
+        }
         if (this.isResizable) {
           let orientations = Object.values(ORIENTATIONS);
           this.edgeOrientations = [];
@@ -6199,6 +6265,7 @@ const sketch =
           // swapping the y range so that maxY->North, minY->South
           let [maxY, minY] = [Math.min(...stepVertsYs), Math.max(...stepVertsYs)];
           this.lowerLeftStepVert = [minX, minY];
+          this.upperLeftStepVert = [minX, maxY];
           if (DEBUGMODE) p5.print("BREAKPOINT", stepVertsPairs);
           stepVertsPairs.forEach((jt, j) => {
             let idx = [prod(jt.map(it => it[1] == maxY)) == 1,
@@ -6219,6 +6286,7 @@ const sketch =
         }
         this.showResizeEq = showresizeeq;
         this.showSizeDesc = showsizedesc;
+        this.sizeDesc = "";
         this.edgelabelPadding = edgelabelpadding;
         this.edgelabelFontsize = (edgelabelfontsize != null) ? edgelabelfontsize : floor(this.pixelUnit * 2 / 5);
         // @refactor: redo the labeling string parser :edgelabels:
@@ -6241,6 +6309,9 @@ const sketch =
         this.isFrozen = frozen;
 
         this.isEmpty = empty;
+
+        this.syncedTilesLabels = synced;
+
 
         //all poinst on edge except the verticies (no cutting along the edges allowed)
         //@improvment: the allowed verticies have to be defined more strictly :AVAILABELCUTS:
@@ -6295,6 +6366,7 @@ const sketch =
         }
         this.edgeColor = edgecolor;
         this.fillColor = (fillcolor == null) ? Tiles.fillColor + "FF" : fillcolor;
+        this.starterFillColor = starterfillcolor;
         if (this.isEmpty && (fillcolor == null)) this.fillColor = Tiles.fillColor + "00";
         // If no alpha is given FF is assumed and appended
         if (this.fillColor.length == 7) this.fillColor = this.fillColor + "FF";
@@ -6316,7 +6388,7 @@ const sketch =
       serialize() {
         // let tilesState = {};
         let tilesState = this.state;
-        return { ...this.args, resumedState: tilesState }
+        return { ...this.args, resumedState: tilesState, starterIndices: this.starterIndices }
       }
 
       get args() {// {{{
@@ -6341,6 +6413,7 @@ const sketch =
           showperimeterline: this.showDrawLine,
           perimeterlinelocation: canvasBuffer.rF.R(...this.drawLine).xy,
           fillcolor: this.fillColor,
+          starterfillcolor: this.starterFillColor,
           fillstriped: this.fillStriped,
           edgecolor: this.edgeColor,
           label: this.label
@@ -6428,6 +6501,7 @@ const sketch =
       updateDragTriangles() {
 
         this.edges.forEach((edge, i) => {
+          if (!this.isResizable.includes(this.edgeOrientations[i][0])) return
           let phi0;
           let shiftFunc;
           let hitboxFunc;
@@ -6518,6 +6592,7 @@ const sketch =
 
       get referencePoint() {
         if (this.isResizable) return this.step2Vert()(this.lowerLeftStepVert);
+        //if (this.isResizable) return this.step2Vert()(this.upperLeftStepVert);
 
         return this.verts[0]
       }
@@ -6528,17 +6603,20 @@ const sketch =
         let new_verts = this.verts.map(it => vadd(it, dvert));
         let new_verts_ = this.verts_.map(it => vadd(it, dvert));
         // todo: add half off bounding box width/height
+        p5.print("setReferencePoint: new verts", JSON.stringify(new_verts.map(it => it.xy)));
         let inCanvas = new_verts.map(vert => p5.collidePointRect(...vert.xy, -200, -200, canvasBuffer.width + 500, canvasBuffer.height + 500))
-        if (all(inCanvas, true)) {
-          this.loc = vadd(this.loc, dvert);
-          // this.innerStepGrid = this.getInnerCenters();
-          this.verts = new_verts;
-          this.verts_ = new_verts_;
-          this.edges = this.updateEdges();
-          if (this.isResizable) this.updateDragTriangles();
-          // this.drawLine = this.drawLine.map(it => vadd(it, vector));
-
-        }
+        // having the undo button this condition causes more problems than it solves
+        //if (all(inCanvas, true)) {
+        this.loc = vadd(this.loc, dvert);
+        //this.referencePoint = vector;
+        // this.innerStepGrid = this.getInnerCenters();
+        this.verts = new_verts;
+        this.verts_ = new_verts_;
+        this.edges = this.updateEdges();
+        if (this.isResizable) this.updateDragTriangles();
+        // this.drawLine = this.drawLine.map(it => vadd(it, vector));
+        //}
+        return vector
       }//}}}
 
       get availableDraws() {
@@ -6595,7 +6673,7 @@ const sketch =
         }
         return isInside
       }
-      pointInArea(point,extended = false) {
+      pointInArea(point, extended = false) {
         let onPolygon = p5.collidePointPoly(point.x, point.y, this.verts)
         let isInside = onPolygon;
         // print(`Label:${this.label}; onPolygon: ${onPolygon}`)
@@ -6606,6 +6684,23 @@ const sketch =
         // }
         if (!isInside && extended) {
           isInside = p5.collidePointCircle(point.x, point.y,
+            ...(this.step2Vert()(this.boundingBoxCenter)).xy,
+            2.1 * Math.max(...this.verts.map(jt => vnorm(vsub(jt, this.step2Vert()(this.boundingBoxCenter))))))
+        }
+        return isInside
+      }
+
+      lineInArea(startPoint, endPoint, extended = false) {
+        let onPolygon = p5.collideLinePoly(startPoint.x, startPoint.y, endPoint.x, endPoint.y, this.verts)
+        let isInside = onPolygon;
+        // print(`Label:${this.label}; onPolygon: ${onPolygon}`)
+        // if (!isInside && this.isResizable) {
+        //   let onControls = any(Object.values(this.dragTriangles).map(it => it.hitbox.mouseInArea()));
+        //   print(`Label:${this.label};onControls: ${onControls}`);
+        //   isInside = isInside || onControls;
+        // }
+        if (!isInside && extended) {
+          isInside = p5.collideLineCircle(startPoint.x, startPoint.y, endPoint.x, endPoint.y,
             ...(this.step2Vert()(this.boundingBoxCenter)).xy,
             2.1 * Math.max(...this.verts.map(jt => vnorm(vsub(jt, this.step2Vert()(this.boundingBoxCenter))))))
         }
@@ -6643,53 +6738,53 @@ const sketch =
         p5.print("handleCutting():", cutLineLocDir);
         this.isCut = true;
 
-      let endPoint = p5.mouseVec();
-      if (AppState["CUTEND"] != undefined) endPoint = AppState["CUTEND"];
+        let endPoint = p5.mouseVec();
+        if (AppState["CUTEND"] != undefined) endPoint = AppState["CUTEND"];
 
-      let cutLineVec = vunit(vsub(endPoint,AppState["CUTSTART"]));
-      let edgePointProjections = [];
-      let edgePointProjectionDistances = [];
-      this.edgePoints
-        .map(p => this.step2Vert()(p))
-        .forEach((p)=>{
-        let vec2Edge = vsub(p, AppState["CUTSTART"]);
-        let proj = vadd(AppState["CUTSTART"],
-        vmult(cutLineVec, vdot(cutLineVec, vec2Edge)));
-        edgePointProjections.push(proj);  
-        edgePointProjectionDistances.push(vdist(proj, p));
-        //p5.circle(...p.xy,10);
-      })//filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
-      
+        let cutLineVec = vunit(vsub(endPoint, AppState["CUTSTART"]));
+        let edgePointProjections = [];
+        let edgePointProjectionDistances = [];
+        this.edgePoints
+          .map(p => this.step2Vert()(p))
+          .forEach((p) => {
+            let vec2Edge = vsub(p, AppState["CUTSTART"]);
+            let proj = vadd(AppState["CUTSTART"],
+              vmult(cutLineVec, vdot(cutLineVec, vec2Edge)));
+            edgePointProjections.push(proj);
+            edgePointProjectionDistances.push(vdist(proj, p));
+            //p5.circle(...p.xy,10);
+          })//filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
+
         //@refactor: argSort would be nice
-      let cutEdgePoints = []
-      let firstIdx = argMin(edgePointProjectionDistances);
-      cutEdgePoints.push({
-        idx: firstIdx,
-        dist: edgePointProjectionDistances[firstIdx]
-      })
-    
-      // @hack: this is a very bad hack
-      edgePointProjectionDistances[firstIdx] += 1000;
-      let secondIdx = argMin(edgePointProjectionDistances);
-      let secondEdgePoint = {
-        idx: secondIdx,
-        dist: edgePointProjectionDistances[secondIdx]
-      }
-      if (cutEdgePoints[0].idx < secondEdgePoint.idx){
-        cutEdgePoints.push(secondEdgePoint);
-      }else{
-        cutEdgePoints.unshift(secondEdgePoint);
-      }
-      p5.print(edgePointProjections, edgePointProjectionDistances, cutEdgePoints);
-      
-      // the edge points should not be neighbors
-      if (abs(cutEdgePoints[0].idx - cutEdgePoints[1].idx) == 1) return
-      p5.print("not neighbors");
-      
-    
-      
-      //@todo: unnecessary
-         // if (AppState["ISCUTTING"] && AppState["CUTEND"] != undefined) {
+        let cutEdgePoints = []
+        let firstIdx = argMin(edgePointProjectionDistances);
+        cutEdgePoints.push({
+          idx: firstIdx,
+          dist: edgePointProjectionDistances[firstIdx]
+        })
+
+        // @hack: this is a very bad hack
+        edgePointProjectionDistances[firstIdx] += 1000;
+        let secondIdx = argMin(edgePointProjectionDistances);
+        let secondEdgePoint = {
+          idx: secondIdx,
+          dist: edgePointProjectionDistances[secondIdx]
+        }
+        if (cutEdgePoints[0].idx < secondEdgePoint.idx) {
+          cutEdgePoints.push(secondEdgePoint);
+        } else {
+          cutEdgePoints.unshift(secondEdgePoint);
+        }
+        p5.print(edgePointProjections, edgePointProjectionDistances, cutEdgePoints);
+
+        // the edge points should not be neighbors
+        if (abs(cutEdgePoints[0].idx - cutEdgePoints[1].idx) == 1) return
+        p5.print("not neighbors");
+
+
+
+        //@todo: unnecessary
+        // if (AppState["ISCUTTING"] && AppState["CUTEND"] != undefined) {
         //   let canclePos = this.step2Vert()(this.currentCut[0]);
         //   let lastPos = this.step2Vert()(this.currentCut[this.currentCut.length - 1]);
         //   // print("befor if:", vsub(mouse, canclePos).mag(), 0.25 * this.pixelUnit);
@@ -6706,142 +6801,156 @@ const sketch =
         // close enough to edgepoints  
 
 
-        
-      // perform the cut
-          if ((cutEdgePoints[0].dist + cutEdgePoints[1].dist)/2 < (this.pixelUnit*0.95)/2) {
+
+        // perform the cut
+        if ((cutEdgePoints[0].dist + cutEdgePoints[1].dist) / 2 < (this.pixelUnit * 0.95) / 2) {
           this.currentCut = [];
 
-            let edgePoint0 = this.edgePoints[cutEdgePoints[0].idx];
-            let edgePoint1 = this.edgePoints[cutEdgePoints[1].idx];
-        let change = 0;
-        let splitOffset = undefined;
-        p5.print("edgePoint0/1:", edgePoint0, edgePoint1);
-          if (cutLineLocDir.dir == DIRECTIONS.EW || cutLineLocDir == DIRECTIONS.WE){ // horizontal cut
-            if (edgePoint0[1] !=  edgePoint1[1]) throw new Error("Should have the same yvalue!")
-             change = Math.sign(edgePoint1[0] - edgePoint0[0]);
-          p5.print(rangeArray(edgePoint0[0],edgePoint1[0], change));
-            rangeArray(edgePoint0[0],edgePoint1[0], change).forEach(x => {
+          let edgePoint0 = this.edgePoints[cutEdgePoints[0].idx];
+          let edgePoint1 = this.edgePoints[cutEdgePoints[1].idx];
+          let change = 0;
+          let splitOffset = undefined;
+          p5.print("edgePoint0/1:", edgePoint0, edgePoint1);
+          if ((cutLineLocDir.dir == DIRECTIONS.EW) || (cutLineLocDir.dir == DIRECTIONS.WE)) { // horizontal cut
+            if (edgePoint0[1] != edgePoint1[1]) throw new Error("Should have the same yvalue!")
+            change = Math.sign(edgePoint1[0] - edgePoint0[0]);
+            p5.print(rangeArray(edgePoint0[0], edgePoint1[0], change));
+            rangeArray(edgePoint0[0], edgePoint1[0], change).forEach(x => {
 
-            this.currentCut.push([x, edgePoint0[1]]);
-          })
-          splitOffset = [0, -5];
-        } else if (cutLineLocDir.dir == DIRECTIONS.NS || cutLineLocDir == DIRECTIONS.SN){ // vertical cut
-            if (edgePoint0[0] !=  edgePoint1[0]) throw new Error("Should have the same xvalue!")
-             change = Math.sign(edgePoint1[1] - edgePoint0[1]);
-          p5.print(rangeArray(edgePoint0[1],edgePoint1[1], change));
-            rangeArray(edgePoint0[1],edgePoint1[1], change).forEach(y => {
+              this.currentCut.push([x, edgePoint0[1]]);
+            })
+            splitOffset = (signs) => [signs[0] * 0, signs[1] * 5];
 
-            this.currentCut.push([edgePoint0[0], y]);
-          })
+          } else if (cutLineLocDir.dir == DIRECTIONS.NS || cutLineLocDir == DIRECTIONS.SN) { // vertical cut
+            if (edgePoint0[0] != edgePoint1[0]) throw new Error("Should have the same xvalue!")
+            change = Math.sign(edgePoint1[1] - edgePoint0[1]);
+            p5.print(rangeArray(edgePoint0[1], edgePoint1[1], change));
+            rangeArray(edgePoint0[1], edgePoint1[1], change).forEach(y => {
 
-          splitOffset = [5, 0];
+              this.currentCut.push([edgePoint0[0], y]);
+            })
+
+            splitOffset = (signs) => [signs[0] * 5, signs[1] * 0];
+          }
+
+          p5.print("currentCut", this.currentCut);
+
+          // @FIX: not all edgePoints are labeled with the (X) and some split parts are rotated (direction issue)
+          //
+          let [ci, cf] = [this.currentCut[0], this.currentCut[this.currentCut.length - 1]];
+          let [ciStepIdx, cfStepIdx] = [ci, cf].map(c => this.edgePoints.findIndex(it => it.toString() == c.toString()));
+          let [cMinStepIdx, cMaxStepIdx] = ([ciStepIdx, cfStepIdx]).sort((a, b) => a - b);
+          let cutIsReversed = (ciStepIdx != cMinStepIdx);
+
+          let initalEdgePart = this.edgePoints.slice(0, cMinStepIdx);
+          let betweenEdgePart = this.edgePoints.slice(cMinStepIdx + 1, cMaxStepIdx);
+          let finalEdgePart = this.edgePoints.slice(cMaxStepIdx + 1);
+          if (DEBUGMODE) print("EdgeParts:");
+          if (DEBUGMODE) print("→ (i): ", initalEdgePart.join("],["));
+          if (DEBUGMODE) print("→ (b): ", betweenEdgePart.join("],["));
+          if (DEBUGMODE) print("→ (f): ", finalEdgePart.join("],["));
+          if (DEBUGMODE) print("→ (curCut): ", this.currentCut.join("],["));
+          let firstPart = [...initalEdgePart, ...((cutIsReversed) ? this.currentCut.slice().reverse() : this.currentCut.slice()), ...finalEdgePart]
+          let secondPart = [...((cutIsReversed) ? this.currentCut.slice() : this.currentCut.slice().reverse()), ...betweenEdgePart];
+          if (DEBUGMODE) print("EdgeParts assambled:");
+          if (DEBUGMODE) print("→ (first): ", firstPart.join("],["));
+          if (DEBUGMODE) print("→ (second): ", secondPart.join("],["));
+
+          saveUndoStep(this, "SPLIT");
+          this.isVisibel = false;
+          this.isFrozen = true;
+          if (DEBUGMODE) print("cutDirs:", edgePoints2Directions(this.currentCut).join(';'));
+          // the last index is unknown due to a slightly broken behavior
+          if (DEBUGMODE) print("cutDirs:", edgePoints2Directions(this.currentCut)[(cutIsReversed) ? 0 : this.currentCut.length - 2]);
+
+          if (DEBUGMODE) print("firstTile:");
+
+          let loc2 = this.step2Vert()(this.currentCut[(!cutIsReversed) ? (this.currentCut.length - 1) : 0]);
+          let splitOffsetSigns = [0, 0];
+
+          splitOffsetSigns[0] = (this.loc.x < loc2.x) ? -1 : +1;
+          splitOffsetSigns[1] = (this.loc.y < loc2.y) ? -1 : +1;
+
+
+          Tiles.createTiles(vadd(this.loc, p5.createVector(...splitOffset(splitOffsetSigns))),
+            edgePoints2Steps(firstPart),
+            this.startDirection,
+            this.unit,
+            {
+              empty: this.isEmpty,
+              zorder: this.zorder,
+              resize: this.resize,
+              resizecolor: this.dragTriangleColor,
+              showresizeeq: this.showResizeEq,
+              showsizedesc: this.showSizeDesc,
+              cuttable: this.isCuttable,
+              fillcolor: this.fillColor,
+              starterfillcolor: this.starterFillColor,
+              fillstriped: this.fillStriped,
+              edgecolor: this.edgeColor,
+              label: `${this.label}|0`,
+              synced: this.synced
+            }
+          );
+          if (DEBUGMODE) print("secondTile:");
+          let startDir = edgePoints2Directions(this.currentCut)[(cutIsReversed) ? 0 : this.currentCut.length - 2][1];
+          let axis;
+          if (startDir.includes("West")) {
+            axis = 'x';
+          } else if (startDir.includes("North")) {
+            axis = 'y';
+          } else {
+            print("ERROR:", startDir);
+          }
+          if (DEBUGMODE) print("axis:", axis);
+          p5.print("loc2", loc2);
+
+          splitOffsetSigns = splitOffsetSigns.map(it => it * (-1));
+          loc2.add(p5.createVector(...splitOffset(splitOffsetSigns)));
+          // p5.print("this.center", this.step2Vert()(this.boundingBoxCenter));
+          p5.print("this.loc", this.loc);
+          p5.print("loc2", loc2);
+          Tiles.createTiles(loc2,
+            edgePoints2Steps(secondPart),
+            axis,
+            this.unit,
+            {
+              empty: this.isEmpty,
+              zorder: this.zorder,
+              resize: this.resize,
+              resizecolor: this.dragTriangleColor,
+              showresizeeq: this.showResizeEq,
+              showsizedesc: this.showSizeDesc,
+              cuttable: this.isCuttable,
+              fillcolor: this.fillColor,
+              starterfillcolor: this.starterFillColor,
+              fillstriped: this.fillStriped,
+              edgecolor: this.edgeColor,
+              label: `${this.label}|1`,
+              synced: this.synced
+            });
+          // print(`####################`);
+          // print(`####### Sign #######`);
+          // print(`####################`);
+          // print(`isReversed ${cutIsReversed}`);
+          this.destruct();
+          // let delIdxT = Tiles.allTiles.findIndex(it => it.label == this.label);
+          // let delIdxM = Moveable.allMoveables.findIndex(it => it.label == this.label);
+          // Tiles.allTiles.splice(delIdxT, 1);
+          // Moveable.allMoveables.splice(delIdxM, 1);
+          return
+
         }
+        if (this.currentCut.length >= 2) {
+          let next2lastPos = this.step2Vert()(this.currentCut[this.currentCut.length - 2]);
+          if (vsub(mouse, next2lastPos).mag() < 0.25 * this.pixelUnit) {
 
-        p5.print("currentCut", this.currentCut);
-
-            // @FIX: not all edgePoints are labeled with the (X) and some split parts are rotated (direction issue)
-        //
-            let [ci, cf] = [this.currentCut[0], this.currentCut[this.currentCut.length - 1]];
-            let [ciStepIdx, cfStepIdx] = [ci, cf].map(c => this.edgePoints.findIndex(it => it.toString() == c.toString()));
-            let [cMinStepIdx, cMaxStepIdx] = ([ciStepIdx, cfStepIdx]).sort((a, b) => a - b);
-            let cutIsReversed = (ciStepIdx != cMinStepIdx);
-
-            let initalEdgePart = this.edgePoints.slice(0, cMinStepIdx);
-            let betweenEdgePart = this.edgePoints.slice(cMinStepIdx + 1, cMaxStepIdx);
-            let finalEdgePart = this.edgePoints.slice(cMaxStepIdx + 1);
-            if (DEBUGMODE) print("EdgeParts:");
-            if (DEBUGMODE) print("→ (i): ", initalEdgePart.join("],["));
-            if (DEBUGMODE) print("→ (b): ", betweenEdgePart.join("],["));
-            if (DEBUGMODE) print("→ (f): ", finalEdgePart.join("],["));
-            if (DEBUGMODE) print("→ (curCut): ", this.currentCut.join("],["));
-            let firstPart = [...initalEdgePart, ...((cutIsReversed) ? this.currentCut.slice().reverse() : this.currentCut.slice()), ...finalEdgePart]
-            let secondPart = [...((cutIsReversed) ? this.currentCut.slice() : this.currentCut.slice().reverse()), ...betweenEdgePart];
-            if (DEBUGMODE) print("EdgeParts assambled:");
-            if (DEBUGMODE) print("→ (first): ", firstPart.join("],["));
-            if (DEBUGMODE) print("→ (second): ", secondPart.join("],["));
-
-            saveUndoStep(this);
-            this.isVisibel = false;
-            this.isFrozen = true;
-            if (DEBUGMODE) print("cutDirs:", edgePoints2Directions(this.currentCut).join(';'));
-            // the last index is unknown due to a slightly broken behavior
-            if (DEBUGMODE) print("cutDirs:", edgePoints2Directions(this.currentCut)[(cutIsReversed) ? 0 : this.currentCut.length - 2]);
-
-            if (DEBUGMODE) print("firstTile:");
-            Tiles.createTiles(this.loc,
-              edgePoints2Steps(firstPart),
-              this.startDirection,
-              this.unit,
-              {
-                empty: this.isEmpty,
-                zorder: this.zorder,
-                resize: this.resize,
-                resizecolor: this.dragTriangleColor,
-                showresizeeq: this.showResizeEq,
-                showsizedesc: this.showSizeDesc,
-                cuttable: this.isCuttable,
-                fillcolor: this.fillColor,
-                fillstriped: this.fillStriped,
-                edgecolor: this.edgeColor,
-                label: `${this.label}|0`
-              });
-            if (DEBUGMODE) print("secondTile:");
-            let startDir = edgePoints2Directions(this.currentCut)[(cutIsReversed) ? 0 : this.currentCut.length - 2][1];
-            let axis;
-            if (startDir.includes("West")) {
-              axis = 'x';
-            } else if (startDir.includes("North")) {
-              axis = 'y';
-            } else {
-              print("ERROR:", startDir);
-            }
-            if (DEBUGMODE) print("axis:", axis);
-            let loc2 = this.step2Vert()(this.currentCut[(!cutIsReversed) ? (this.currentCut.length - 1) : 0]);
-        p5.print("loc2", loc2);
-
-            loc2.add(p5.createVector(...splitOffset))
-            p5.print("loc2", loc2);
-            Tiles.createTiles(loc2,
-              edgePoints2Steps(secondPart),
-              axis,
-              this.unit,
-              {
-                empty: this.isEmpty,
-                zorder: this.zorder,
-                resize: this.resize,
-                resizecolor: this.dragTriangleColor,
-                showresizeeq: this.showResizeEq,
-                showsizedesc: this.showSizeDesc,
-                cuttable: this.isCuttable,
-                fillcolor: this.fillColor,
-                fillstriped: this.fillStriped,
-                edgecolor: this.edgeColor,
-                label: `${this.label}|1`
-              });
-            // print(`####################`);
-            // print(`####### Sign #######`);
-            // print(`####################`);
-            // print(`isReversed ${cutIsReversed}`);
-            this.destruct();
-            // let delIdxT = Tiles.allTiles.findIndex(it => it.label == this.label);
-            // let delIdxM = Moveable.allMoveables.findIndex(it => it.label == this.label);
-            // Tiles.allTiles.splice(delIdxT, 1);
-            // Moveable.allMoveables.splice(delIdxM, 1);
-            AppState["CUTSTART"] = undefined;
-            AppState["CUTEND"] = undefined;
+            if (DEBUGMODE) print("step back");
+            this.currentCut.splice(this.currentCut.length - 1, 1);
+            this.availableCuts = this.getAvailCuts();
             return
-
           }
-          if (this.currentCut.length >= 2) {
-            let next2lastPos = this.step2Vert()(this.currentCut[this.currentCut.length - 2]);
-            if (vsub(mouse, next2lastPos).mag() < 0.25 * this.pixelUnit) {
-
-              if (DEBUGMODE) print("step back");
-              this.currentCut.splice(this.currentCut.length - 1, 1);
-              this.availableCuts = this.getAvailCuts();
-              return
-            }
-          }
+        }
 
         //}
         if (this.availableCuts.length > 0) {
@@ -6920,7 +7029,7 @@ const sketch =
           return availCuts
         }
       }// }}}
-
+      //@todo: unnecessary
       handleDrawing() {// {{{
         if (this.isDrawable) {
 
@@ -6963,38 +7072,101 @@ const sketch =
       }// }}}
 
 
+      index2center(index, starterSize) {
+        starterSize = starterSize || false;
+        let xl = this.rectSideLengths.x;
+        let yl = this.rectSideLengths.y;
+        if (starterSize) {
+          xl = this.starterIndices[0].length;
+          yl = this.starterIndices.length;
+        }
+        let origin = this.innerCenters[0];
+        let x = (index) % yl;
+        let y = floor((index) / xl);
+        return [origin[0] + x, origin[1] + y];
+      }
+
+      drawDotsByIndex(index, opt) {
+        let center = this.innerCenters[index];
+        if (center == undefined) {
+          return
+          // if (index == 4) p5.print(this.index2center(index, true));
+          // center = this.index2center(index, true);
+        };
+        p5.push();
+        if (opt.fill) p5.fill(opt.fill);
+        if (opt.stroke) p5.stroke(opt.stroke);
+        p5.strokeWeight(0);
+        p5.circle(...this.step2Vert()(center).xy, this.pixelUnit * 0.95);
+        p5.pop();
+      }
       draw() {//{{{
         p5.push();
         if (this.isVisibel) {
 
           if (!this.isEmpty) {
             p5.push();
+            // background of tiles
+            p5.fill("#FFF");
+            p5.rectMode(p5.CORNERS);
+            p5.rect(...this.stepVerts2Verts().map(it => it.xy).filter((it, i) => i % 2 == 0).flat());
             p5.rectMode(p5.CENTER);
             p5.strokeWeight(5);
             p5.stroke("#EEE");
-
             let fillColors = [this.fillColor, '#' + (parseInt(this.fillColor.slice(1), 16) - parseInt("22222200", 16)).toString(16)];
             let idx = 0
             let lastY = 0;
             this.innerCenters.map(this.step2Vert()).forEach(
               (center, i) => {
                 if ((this.fillStriped) && (Math.abs(center.y - lastY) > 1e-3)) { idx = (idx + 1) % 2 }
-                p5.fill(fillColors[idx]);
+                //p5.fill(fillColors[idx]);
                 //p5.rect(...center.xy, this.pixelUnit, this.pixelUnit)
-                p5.push();  
-                p5.fill("#991122");
+                p5.push();
+                p5.fill(this.fillColor);
                 p5.strokeWeight(0);
-                p5.stroke("#991122");
-                p5.circle(...center.xy, this.pixelUnit*0.95);
-              p5.pop();
+                p5.stroke(this.fillColor);
+                p5.circle(...center.xy, this.pixelUnit * 0.95);
+                p5.pop();
                 lastY = center.y;
               })
+            if (this.starterFillColor != undefined) {
+              this.starterIndices.flat().forEach((it) => this.drawDotsByIndex(it, { fill: this.starterFillColor, stroke: this.starterFillColor }));
+            }
+            // this.firstInnerCenters.map(it => String(it)).map((jt) => this.innerCenters.map(kt => String(kt)).includes(jt)).forEach(
+            //   (isIn, i) => {
+            //     if (isIn) {
+            //       let center = this.step2Vert()(this.firstInnerCenters[i])
+            //       p5.print(center, i);
+            //       if ((this.fillStriped) && (Math.abs(center.y - lastY) > 1e-3)) { idx = (idx + 1) % 2 }
+            //       //p5.fill(fillColors[idx]);
+            //       //p5.rect(...center.xy, this.pixelUnit, this.pixelUnit)
+            //       p5.push();
+            //       p5.fill("#009900");
+            //       p5.strokeWeight(0);
+            //       p5.stroke("#009900");
+            //       p5.circle(...center.xy, this.pixelUnit * 0.95);
+            //       p5.pop();
+            //       lastY = center.y;
+            //     }
+            //   })
             p5.stroke(this.edgeColor);
             // this.edges.forEach((edge, _) => {
             //   p5.line(...edge.map(vert => vert.xy).flat());
             // })
+            //draw thin border around dotarray
+            p5.stroke(this.edgeColor);
+            p5.strokeWeight(2);
+            this.edges.forEach((edge, _) => {
+              p5.line(...edge.map(vert => vert.xy).flat());
+            })
+            if (DEBUGMODE) p5.circle(...this.step2Vert()(this.boundingBoxCenter).xy, 10);
+            p5.fill("#922");
+            p5.stroke("#922");
+            // this.innerCenters.map(this.step2Vert()).forEach((it, i) => {
+            //
+            //   p5.text(`${i}`, ...(it).xy, 10);
+            // });
             p5.pop();
-
 
           } else {
             p5.push();
@@ -7020,52 +7192,55 @@ const sketch =
           let verbalNumbers = ["null", "ein", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun",
             "zehn", "elf", "zwölf", "dreizehn", "vierzehn", "fünfzehn", "sechzehn", "siebzehn", "achtzehn", "neunzehn", "zwanzig"]
           // show the triangles for resizing
-        //
-          function drawSizeDescription(T, changeNumCols=0, changeNumRows=0, direction){
-              if (!AppState.SHOWDESC) return
-              let numCols = abs(T.steps[T.startDirOffset]) + (changeNumCols);
-              let numRows = abs(T.steps[T.startDirOffset + 1]) + (changeNumRows);
-              let [edgeX, edgeY] = (T.step2Vert()([T.boundingBoxCenter[0],1])).xy;//vmult(T.edges.reduce((c,it)=> vadd(c,it), p5.createVector(0, 0)), 0.25).xy;
-                // p5.print("edgeX" + `${edgeX}`)
-              if (direction == "West") edgeX = edgeX - changeNumCols/2*T.pixelUnit;
-              if (direction == "East") edgeX = edgeX + changeNumCols/2*T.pixelUnit;
-          
-              if (direction == "South"){
-          //       p5.print("edgeX" + `${edgeX}`)
-          //     }else{
+          //
+          function drawSizeDescription(T, changeNumCols = 0, changeNumRows = 0, direction) {
+            if (!AppState.SHOWDESC) return
+            let numCols = abs(T.steps[T.startDirOffset]) + (changeNumCols);
+            let numRows = abs(T.steps[T.startDirOffset + 1]) + (changeNumRows);
+            let [edgeX, edgeY] = (T.step2Vert()([T.boundingBoxCenter[0], 1])).xy;//vmult(T.edges.reduce((c,it)=> vadd(c,it), p5.createVector(0, 0)), 0.25).xy;
+            // p5.print("edgeX" + `${edgeX}`)
+            if (direction == "West") edgeX = edgeX - changeNumCols / 2 * T.pixelUnit;
+            if (direction == "East") edgeX = edgeX + changeNumCols / 2 * T.pixelUnit;
+
+            if (direction == "South") {
+              //       p5.print("edgeX" + `${edgeX}`)
+              //     }else{
               edgeY = edgeY + changeNumRows * T.pixelUnit;
-          }  
-              // p5.print(`boundingbox ${T.label} ${T.boundingBoxCenter}`)
-              let edgeX_old = edgeX;
-              p5.push();
-              if (T.showSizeDesc) {
-                p5.textAlign("center", "center");
-                p5.textSize(20);
-                  p5.fill("#888F");
-                    // p5.print("show size" + ` ${numCols} x ${numRows} (${edgeX}, ${edgeY})`);
-                    let description; 
-                    if((numRows == 1)&&(numCols==1)){
-                    description = "";
-                    }else if(numRows == 1){
-                    description = `${Math.abs(numCols)} Punkte in einer Reihe, also eine ${Math.abs(numCols)}er Reihe`;
-                    }else{
-                    description =`${verbalNumbers[Math.abs(numRows)]} ${Math.abs(numCols)}er Reihen, das sind ${Math.abs(numRows)} · ${Math.abs(numCols)} Punkte`;
-                    } 
-                    // let textwidth = p5.textWidth(description);
-                    // p5.push()
-                    // p5.rectMode(p5.CENTER);
-                    // p5.noStroke();
-                    // p5.fill("white");
-                    // p5.rect(edgeX, edgeY, (2+numCols)*T.pixelUnit, 20)
-                    // p5.pop();
-                    p5.text(description, edgeX, edgeY);
-                  }
+            }
+            // p5.print(`boundingbox ${T.label} ${T.boundingBoxCenter}`)
+            let edgeX_old = edgeX;
+            p5.push();
+            if (T.showSizeDesc) {
+              p5.textAlign("center", "center");
+              p5.textSize(20);
+              p5.fill("#888F");
+              // p5.print("show size" + ` ${numCols} x ${numRows} (${edgeX}, ${edgeY})`);
+              let description;
+              if ((numRows == 1) && (numCols == 1)) {
+                description = "";
+                T.sizeDesc = "";
+              } else if (numRows == 1) {
+                description = `${Math.abs(numCols)} Punkte in einer Reihe, also eine ${Math.abs(numCols)}er Reihe`;
+                T.sizeDesc = `${Math.abs(numCols)} Punkte in einer Reihe, also eine ${Math.abs(numCols)}er Reihe`;
+              } else {
+                description = `${verbalNumbers[Math.abs(numRows)]} ${Math.abs(numCols)}er Reihen, das sind ${Math.abs(numRows)} · ${Math.abs(numCols)} Punkte`;
+                T.sizeDesc = `${verbalNumbers[Math.abs(numRows)]} ${Math.abs(numCols)}er Reihen, das sind ${Math.abs(numRows)} · ${Math.abs(numCols)} Punkte`;
+              }
+              // let textwidth = p5.textWidth(description);
+              // p5.push()
+              // p5.rectMode(p5.CENTER);
+              // p5.noStroke();
+              // p5.fill("white");
+              // p5.rect(edgeX, edgeY, (2+numCols)*T.pixelUnit, 20)
+              // p5.pop();
+              //p5.text(description, edgeX, edgeY);
+            }
 
-              p5.pop();
-        }
+            p5.pop();
+          }
 
-        
-        if ((this.isActive) && (this.isResizable)) {
+
+          if ((this.isActive) && (this.isResizable)) {
             p5.push();
             p5.noStroke();
             Object.values(this.dragTriangles).forEach(it => {
@@ -7105,79 +7280,81 @@ const sketch =
                   countUnits = -(floor(draggingDist / this.pixelUnit + 0.5));
 
                   numCols = abs(this.steps[idx]);
-                  if(!this.isEmpty) {
-                  // p5.rect(edgeX, edgeY + (draggingDist / 2), this.steps[idx] * this.pixelUnit, draggingDist);
+                  if (!this.isEmpty) {
+                    // p5.rect(edgeX, edgeY + (draggingDist / 2), this.steps[idx] * this.pixelUnit, draggingDist);
 
-                  p5.push();
-                  p5.noFill();
-                  p5.stroke("#EEE");
-                  p5.strokeWeight(5);
-                  [...Array(Math.abs(countUnits)).keys()].reverse().forEach(jt => {
-                    p5.fill("#DDD");
-                    if (jt % 2 == 1) p5.fill("#CCC");
+                    p5.push();
+                    p5.noFill();
+                    p5.stroke("#EEE");
+                    p5.strokeWeight(5);
+                    [...Array(Math.abs(countUnits)).keys()].reverse().forEach(jt => {
+                      p5.fill("#DDD");
+                      if (jt % 2 == 1) p5.fill("#CCC");
 
-                    // p5.rect(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit, Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
-                  p5.push();
-                  p5.fill("#991122");
-                  p5.strokeWeight(0);
-                  p5.stroke("#991122");
-                    
-                    evenColumnsOffset = (numCols%2 == 0)? -this.pixelUnit/2 : 0;
-                    dotPositions = [...Array(numCols).keys()];
-                     
-                    if(numCols %2 == 1){
-                    dotPositions = dotPositions.map(it => it - floor(numCols/2))
-                    }else{
-                    dotPositions= dotPositions.map(it => it - floor((numCols-1)/2))
-                    dotPositions.push(numCols/2)
-                    }
-                      dotPositions.forEach(it => {
-                      p5.circle(edgeX + evenColumnsOffset + it*this.pixelUnit, edgeY - Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.95);
-                      
-                      if ((Math.sign(draggingDist) == shrinkSign)){
-                      let numShrunkRows = Math.round(Math.draggingDist / this.pixelUnit);
-                      p5.push()
-                      p5.fill("#FFFFFF5");
-                      p5.circle(edgeX + evenColumnsOffset + it*this.pixelUnit, edgeY - Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.98);
-                      p5.pop()
-                        
+                      // p5.rect(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit, Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
+                      p5.push();
+                      p5.fill(this.fillColor);
+                      p5.strokeWeight(0);
+                      p5.stroke(this.fillColor);
 
+                      evenColumnsOffset = (numCols % 2 == 0) ? -this.pixelUnit / 2 : 0;
+                      dotPositions = [...Array(numCols).keys()];
+
+                      if (numCols % 2 == 1) {
+                        dotPositions = dotPositions.map(it => it - floor(numCols / 2))
+                      } else {
+                        dotPositions = dotPositions.map(it => it - floor((numCols - 1) / 2))
+                        dotPositions.push(numCols / 2)
                       }
-                    })
-                    // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
-                    // [...Array(numCols).keys()].map(it => it - floor(numCols/2))
-                    //   .filter(it => it != 0)
-                    //   .forEach(i => {
-                    // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.95);
+                      dotPositions.forEach(it => {
+                        p5.circle(edgeX + evenColumnsOffset + it * this.pixelUnit, edgeY - Math.sign(countUnits) * (jt + 1 / 2) * this.pixelUnit, this.pixelUnit * 0.95);
 
-                    // })
-                  p5.pop();
-                  })
+                        if ((Math.sign(draggingDist) == shrinkSign)) {
+                          let numShrunkRows = Math.round(Math.draggingDist / this.pixelUnit);
+                          p5.push()
+                          p5.fill("#FFFFFF55");
+                          // grayed out
+                          p5.fill("#FFFFFFDD");
+                          p5.circle(edgeX + evenColumnsOffset + it * this.pixelUnit, edgeY - Math.sign(countUnits) * (jt + 1 / 2) * this.pixelUnit, this.pixelUnit * 0.98);
+                          p5.pop()
+
+
+                        }
+                      })
+                      // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
+                      // [...Array(numCols).keys()].map(it => it - floor(numCols/2))
+                      //   .filter(it => it != 0)
+                      //   .forEach(i => {
+                      // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.95);
+
+                      // })
+                      p5.pop();
+                    })
                     // if (Math.sign(draggingDist) == shrinkSign){
-                      // print("!!!!!", p5.mouseX-draggingVector.x,(p5.mouseY-draggingVector.y)/2);
-                      // p5.push()
-                      // p5.rectMode(p5.CENTER);
-                      // 
-                      // p5.fill("#0000FF");
-                      // p5.circle(p5.mouseX-draggingVector.x,(p5.mouseY-draggingVector.y)/2,20)
-                      // p5.fill("#FFFFFF");
-                      //   
-                      // p5.rect(p5.mouseX-draggingVector.x, (p5.mouseY-draggingVector.y)/2,  numCols*this.pixelUnit, (p5.mouseY-draggingVector.y)/2);
-                      // p5.pop()
+                    // print("!!!!!", p5.mouseX-draggingVector.x,(p5.mouseY-draggingVector.y)/2);
+                    // p5.push()
+                    // p5.rectMode(p5.CENTER);
+                    // 
+                    // p5.fill("#0000FF");
+                    // p5.circle(p5.mouseX-draggingVector.x,(p5.mouseY-draggingVector.y)/2,20)
+                    // p5.fill("#FFFFFF");
+                    //   
+                    // p5.rect(p5.mouseX-draggingVector.x, (p5.mouseY-draggingVector.y)/2,  numCols*this.pixelUnit, (p5.mouseY-draggingVector.y)/2);
+                    // p5.pop()
                     // }
 
-                  let oddCorrection = numCols % 2;
-                  // let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()];
-                  // print("linestarts:", lineStarts);
+                    let oddCorrection = numCols % 2;
+                    // let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()];
+                    // print("linestarts:", lineStarts);
 
                     // .map(it => it - ((numCols - 1) - oddCorrection) / 2)
                     // .map(it => [edgeX - (it + 0.5 * ((oddCorrection + 1) % 2)) * this.pixelUnit, edgeY])
-                  // print("lineStarts:", lineStarts);
-                  //lineStarts.forEach(xy => p5.line(...xy, xy[0], draggingDist + xy[1]));
-                  // lineStarts.forEach(xy => {p5.point(...xy, xy[0]); p5.point(draggingDist + xy[1])});
+                    // print("lineStarts:", lineStarts);
+                    //lineStarts.forEach(xy => p5.line(...xy, xy[0], draggingDist + xy[1]));
+                    // lineStarts.forEach(xy => {p5.point(...xy, xy[0]); p5.point(draggingDist + xy[1])});
 
-                  p5.pop();
-                }
+                    p5.pop();
+                  }
                   p5.push();
                   p5.stroke(this.edgeColor);
                   p5.strokeWeight(5);
@@ -7189,12 +7366,12 @@ const sketch =
                   numRows = countUnits; //+ ((countUnits < 0) ? -1 : 0);
                   if (this.showResizeEq && numRows != 0 && numCols != 0) {
                     p5.text(`${verbalNumbers[Math.abs(numRows)]} ${numCols}er ${(numRows > 0) ? "mehr" : "weniger"}`, edgeX, edgeY + (draggingDist / 2));
-                   
-                  
+
+
                   }
                   // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX, edgeY + (draggingDist / 2));
 
-                  drawSizeDescription(this, 0, numRows,draggingDirection )                  
+                  drawSizeDescription(this, 0, numRows, draggingDirection)
                 } else if (draggingDirection == "South") {
                   shrinkSign = -1;
                   numCols = abs(this.steps[idx]);
@@ -7210,55 +7387,57 @@ const sketch =
                   countUnits = (floor(draggingDist / this.pixelUnit + 0.5));
                   // if (countUnits < 0) countUnits -= 1;
                   // draggingDist += (draggingDist < 0) ? this.pixelUnit : 0;
-                //
-                  if(!this.isEmpty){
-                  // p5.rect(edgeX, edgeY + (draggingDist / 2), this.steps[idx] * this.pixelUnit, draggingDist);
-                  p5.push();
-                  p5.noFill();
-                  p5.stroke("#EEE");
-                  p5.strokeWeight(5);
-                  [...Array(Math.abs(countUnits)).keys()].reverse().forEach(jt => {
-                    p5.fill("#DDD");
-                    if (jt % 2 == 1) p5.fill("#CCC");
+                  //
+                  if (!this.isEmpty) {
+                    // p5.rect(edgeX, edgeY + (draggingDist / 2), this.steps[idx] * this.pixelUnit, draggingDist);
+                    p5.push();
+                    p5.noFill();
+                    p5.stroke("#EEE");
+                    p5.strokeWeight(5);
+                    [...Array(Math.abs(countUnits)).keys()].reverse().forEach(jt => {
+                      p5.fill("#DDD");
+                      if (jt % 2 == 1) p5.fill("#CCC");
 
-                    // p5.rect(edgeX, edgeY + Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit, Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
-                  p5.push();
-                  p5.fill("#991122");
-                  p5.strokeWeight(0);
-                  p5.stroke("#991122");
-                    // p5.circle(edgeX, edgeY + Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.95);
-                    // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
-                    evenColumnsOffset = (numCols%2 == 0)? -this.pixelUnit/2 : 0;
-                    dotPositions = [...Array(numCols).keys()];
-                     
-                    if(numCols %2 == 1){
-                    dotPositions = dotPositions.map(it => it - floor(numCols/2));
-                    }else{
-                    dotPositions= dotPositions.map(it => it - floor((numCols-1)/2));
-                    dotPositions.push(numCols/2)
-                    }
-                      dotPositions.forEach(it => {
-                      p5.circle(edgeX + evenColumnsOffset + it*this.pixelUnit, edgeY + Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.95);
+                      // p5.rect(edgeX, edgeY + Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit, Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
+                      p5.push();
+                      p5.fill(this.fillColor);
+                      p5.strokeWeight(0);
+                      p5.stroke(this.fillColor);
+                      // p5.circle(edgeX, edgeY + Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.95);
+                      // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
+                      evenColumnsOffset = (numCols % 2 == 0) ? -this.pixelUnit / 2 : 0;
+                      dotPositions = [...Array(numCols).keys()];
 
-                      if ((Math.sign(draggingDist) == shrinkSign)){
-                      let numShrunkRows = Math.round(Math.draggingDist / this.pixelUnit);
-                      p5.push()
-                      p5.fill("#FFFFFF5");
-                      p5.circle(edgeX + evenColumnsOffset + it*this.pixelUnit, edgeY + Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.98);
-                      p5.pop()
+                      if (numCols % 2 == 1) {
+                        dotPositions = dotPositions.map(it => it - floor(numCols / 2));
+                      } else {
+                        dotPositions = dotPositions.map(it => it - floor((numCols - 1) / 2));
+                        dotPositions.push(numCols / 2)
                       }
-                    })
+                      dotPositions.forEach(it => {
+                        p5.circle(edgeX + evenColumnsOffset + it * this.pixelUnit, edgeY + Math.sign(countUnits) * (jt + 1 / 2) * this.pixelUnit, this.pixelUnit * 0.95);
 
-                  p5.pop();
-                  })
-                  let oddCorrection = numCols % 2;
-                  // let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()]
+                        if ((Math.sign(draggingDist) == shrinkSign)) {
+                          let numShrunkRows = Math.round(Math.draggingDist / this.pixelUnit);
+                          p5.push()
+                          p5.fill("#FFFFFF");
+                          // grayed out
+                          p5.fill("#FFFFFFDD");
+                          p5.circle(edgeX + evenColumnsOffset + it * this.pixelUnit, edgeY + Math.sign(countUnits) * (jt + 1 / 2) * this.pixelUnit, this.pixelUnit * 0.98);
+                          p5.pop()
+                        }
+                      })
+
+                      p5.pop();
+                    })
+                    let oddCorrection = numCols % 2;
+                    // let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()]
                     // .map(it => it - ((numCols - 1) - oddCorrection) / 2)
                     // .map(it => [edgeX - (it + 0.5 * ((oddCorrection + 1) % 2)) * this.pixelUnit, edgeY])
-                  // print("lineStarts:", lineStarts);
-                  // lineStarts.forEach(xy => p5.line(...xy, xy[0], draggingDist + xy[1]));
+                    // print("lineStarts:", lineStarts);
+                    // lineStarts.forEach(xy => p5.line(...xy, xy[0], draggingDist + xy[1]));
 
-                  p5.pop();
+                    p5.pop();
                   }
                   p5.push();
                   p5.stroke(this.edgeColor);
@@ -7273,7 +7452,7 @@ const sketch =
                     p5.text(`${verbalNumbers[Math.abs(numRows)]} ${numCols}er ${(numRows > 0) ? "mehr" : "weniger"}`, edgeX, edgeY + (draggingDist / 2));
                   }
                   // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX, edgeY + (draggingDist / 2));
-                  drawSizeDescription(this, 0, numRows, draggingDirection)                  
+                  drawSizeDescription(this, 0, numRows, draggingDirection)
                 } else if (draggingDirection == "East") {
                   shrinkSign = -1;
                   let draggingDist = clampValue(draggingVector.x, -(Math.abs(this.steps[(idx + 1) % 4]) - 1) * this.pixelUnit, Number.MAX_VALUE);
@@ -7288,57 +7467,65 @@ const sketch =
 
                   // if (countUnits < 0) countUnits -= 1;
                   numRows = abs(this.steps[idx]);
-                  if(!this.isEmpty) {
-                  // p5.rect(edgeX + (draggingDist / 2), edgeY, draggingDist, this.steps[idx] * this.pixelUnit);
-                  
-                  p5.push();
-                  p5.noFill();
-                  p5.stroke("#EEE");
-                  p5.strokeWeight(5);
-                  [...Array(Math.abs(countUnits)).keys()].reverse().forEach(jt => {
-                    p5.fill("#CCC");
-                    if (jt % 2 == 1) {
-                      p5.fill("#DDD");
+                  if (!this.isEmpty) {
+                    // p5.rect(edgeX + (draggingDist / 2), edgeY, draggingDist, this.steps[idx] * this.pixelUnit);
 
-                    }
-                    // p5.rect(edgeX + (Math.sign(countUnits) * (jt + 1)) * this.pixelUnit / 2, edgeY, Math.sign(countUnits) * (jt + 1) * this.pixelUnit, this.steps[idx] * this.pixelUnit);
-                  p5.push();
-                  p5.fill("#991122");
-                  p5.strokeWeight(0);
-                  p5.stroke("#991122");
-                    // p5.circle(edgeX + (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit, edgeY, this.pixelUnit*0.95);
-                    // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
-                    
-                    evenRowsOffset = (numRows%2 == 0)? -this.pixelUnit/2 : 0;
-                    dotPositions = [...Array(numRows).keys()];
-                     
-                    if(numRows %2 == 1){
-                    dotPositions = dotPositions.map(it => it - floor(numRows/2));
-                    }else{
-                    dotPositions= dotPositions.map(it => it - floor((numRows-1)/2));
-                    dotPositions.push(numRows/2)
-                    }
-                      dotPositions.forEach(it => {
-                      p5.circle(edgeX+ (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit,  edgeY + evenRowsOffset + it*this.pixelUnit, this.pixelUnit*0.95);
-                      
-                      if ((Math.sign(draggingDist) == shrinkSign)){
-                      let numShrunkCols = Math.round(Math.draggingDist / this.pixelUnit);
-                      p5.push()
-                      p5.fill("#FFFFFF5");
-                      p5.circle(edgeX+ (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit,  edgeY + evenRowsOffset + it*this.pixelUnit, this.pixelUnit*0.98);
-                      p5.pop()
+                    p5.push();
+                    p5.noFill();
+                    p5.stroke("#EEE");
+                    p5.strokeWeight(5);
+                    [...Array(Math.abs(countUnits)).keys()].reverse().forEach(jt => {
+                      p5.fill("#CCC");
+                      if (jt % 2 == 1) {
+                        p5.fill("#DDD");
+
                       }
-                    })
+                      // p5.rect(edgeX + (Math.sign(countUnits) * (jt + 1)) * this.pixelUnit / 2, edgeY, Math.sign(countUnits) * (jt + 1) * this.pixelUnit, this.steps[idx] * this.pixelUnit);
+                      p5.push();
+                      p5.fill(this.fillColor);
+                      p5.strokeWeight(0);
+                      p5.stroke(this.fillColor);
 
-                  p5.pop();
-                  })
-                  let oddCorrection = numRows % 2;
-                  // let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()]
-                  //   .map(it => it - ((numRows - 1) - oddCorrection) / 2)
-                  //   .map(it => [edgeX, edgeY - (it + 0.5 * ((oddCorrection + 1) % 2)) * this.pixelUnit])
-                  // // print("lineStarts:", lineStarts);
-                  // lineStarts.forEach(xy => p5.line(...xy, xy[0] + draggingDist, xy[1]));
-                  p5.pop();
+                      // p5.circle(edgeX + (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit, edgeY, this.pixelUnit*0.95);
+                      // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
+
+                      evenRowsOffset = (numRows % 2 == 0) ? -this.pixelUnit / 2 : 0;
+                      dotPositions = [...Array(numRows).keys()];
+                      // if ((this.starterFillColor != undefined) && (this.rectSideLengths.x < this.starterIndices[0].length)) {
+                      //   p5.fill(this.starterFillColor);
+                      //   p5.stroke(this.starterFillColor);
+                      //
+                      // }
+
+                      if (numRows % 2 == 1) {
+                        dotPositions = dotPositions.map(it => it - floor(numRows / 2));
+                      } else {
+                        dotPositions = dotPositions.map(it => it - floor((numRows - 1) / 2));
+                        dotPositions.push(numRows / 2)
+                      }
+                      dotPositions.forEach(it => {
+                        p5.circle(edgeX + (Math.sign(countUnits) * (jt + 1 / 2)) * this.pixelUnit, edgeY + evenRowsOffset + it * this.pixelUnit, this.pixelUnit * 0.95);
+
+                        if ((Math.sign(draggingDist) == shrinkSign)) {
+                          let numShrunkCols = Math.round(Math.draggingDist / this.pixelUnit);
+                          p5.push()
+                          p5.fill("#FFFFFF");
+                          // grayed out
+                          p5.fill("#FFFFFFDD");
+                          p5.circle(edgeX + (Math.sign(countUnits) * (jt + 1 / 2)) * this.pixelUnit, edgeY + evenRowsOffset + it * this.pixelUnit, this.pixelUnit * 0.98);
+                          p5.pop()
+                        }
+                      })
+
+                      p5.pop();
+                    })
+                    let oddCorrection = numRows % 2;
+                    // let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()]
+                    //   .map(it => it - ((numRows - 1) - oddCorrection) / 2)
+                    //   .map(it => [edgeX, edgeY - (it + 0.5 * ((oddCorrection + 1) % 2)) * this.pixelUnit])
+                    // // print("lineStarts:", lineStarts);
+                    // lineStarts.forEach(xy => p5.line(...xy, xy[0] + draggingDist, xy[1]));
+                    p5.pop();
                   }
 
                   p5.push();
@@ -7355,7 +7542,7 @@ const sketch =
                   }
                   // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX + (draggingDist / 2), edgeY);
 
-                  drawSizeDescription(this, numCols, 0,draggingDirection)                  
+                  drawSizeDescription(this, numCols, 0, draggingDirection)
                 } else if (draggingDirection == "West") {
                   shrinkSign = 1;
                   let draggingDist = clampValue(draggingVector.x, -Number.MAX_VALUE, (Math.abs(this.steps[(idx + 1) % 4]) - 1) * this.pixelUnit);
@@ -7370,56 +7557,58 @@ const sketch =
                   // if (countUnits < 0) countUnits -= 2;
                   // draggingDist += (draggingDist > 0) ? this.pixelUnit : 0;
                   numRows = abs(this.steps[idx]);
-                  if(!this.isEmpty){
-                  // p5.rect(edgeX + (draggingDist / 2), edgeY, draggingDist, this.steps[idx] * this.pixelUnit);
-                  p5.push();
-                  p5.noFill();
-                  p5.stroke("#EEE");
-                  p5.strokeWeight(5);
-                  [...Array(Math.abs(countUnits)).keys()].reverse().forEach(jt => {
-                    p5.fill("#CCC");
-                    if (jt % 2 == 1) p5.fill("#DDD");
-                    // p5.rect(edgeX - (Math.sign(countUnits) * (jt + 1)) * this.pixelUnit / 2, edgeY, Math.sign(countUnits) * (jt + 1) * this.pixelUnit, this.steps[idx] * this.pixelUnit);
+                  if (!this.isEmpty) {
+                    // p5.rect(edgeX + (draggingDist / 2), edgeY, draggingDist, this.steps[idx] * this.pixelUnit);
+                    p5.push();
+                    p5.noFill();
+                    p5.stroke("#EEE");
+                    p5.strokeWeight(5);
+                    [...Array(Math.abs(countUnits)).keys()].reverse().forEach(jt => {
+                      p5.fill("#CCC");
+                      if (jt % 2 == 1) p5.fill("#DDD");
+                      // p5.rect(edgeX - (Math.sign(countUnits) * (jt + 1)) * this.pixelUnit / 2, edgeY, Math.sign(countUnits) * (jt + 1) * this.pixelUnit, this.steps[idx] * this.pixelUnit);
 
-                  p5.push();
-                  p5.fill("#991122");
-                  p5.strokeWeight(0);
-                  p5.stroke("#991122");
-                    // p5.circle(edgeX - (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit, edgeY, this.pixelUnit*0.95);
-                    // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
-                    
-                    evenRowsOffset = (numRows%2 == 0)? -this.pixelUnit/2 : 0;
-                    dotPositions = [...Array(numRows).keys()];
-                     
-                    if(numRows %2 == 1){
-                    dotPositions = dotPositions.map(it => it - floor(numRows/2));
-                    }else{
-                    dotPositions= dotPositions.map(it => it - floor((numRows-1)/2));
-                    dotPositions.push(numRows/2)
-                    }
-                      dotPositions.forEach(it => {
-                      p5.circle(edgeX- (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit,  edgeY + evenRowsOffset + it*this.pixelUnit, this.pixelUnit*0.95);
-                      
-                      if ((Math.sign(draggingDist) == shrinkSign)){
-                      let numShrunkCols = Math.round(Math.draggingDist / this.pixelUnit);
-                      p5.push()
-                      p5.fill("#FFFFFF5");
-                      p5.circle(edgeX- (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit,  edgeY + evenRowsOffset + it*this.pixelUnit, this.pixelUnit*0.98);
-                      p5.pop()
+                      p5.push();
+                      p5.fill(this.fillColor);
+                      p5.strokeWeight(0);
+                      p5.stroke(this.fillColor);
+                      // p5.circle(edgeX - (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit, edgeY, this.pixelUnit*0.95);
+                      // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
+
+                      evenRowsOffset = (numRows % 2 == 0) ? -this.pixelUnit / 2 : 0;
+                      dotPositions = [...Array(numRows).keys()];
+
+                      if (numRows % 2 == 1) {
+                        dotPositions = dotPositions.map(it => it - floor(numRows / 2));
+                      } else {
+                        dotPositions = dotPositions.map(it => it - floor((numRows - 1) / 2));
+                        dotPositions.push(numRows / 2)
                       }
+                      dotPositions.forEach(it => {
+                        p5.circle(edgeX - (Math.sign(countUnits) * (jt + 1 / 2)) * this.pixelUnit, edgeY + evenRowsOffset + it * this.pixelUnit, this.pixelUnit * 0.95);
+
+                        if ((Math.sign(draggingDist) == shrinkSign)) {
+                          let numShrunkCols = Math.round(Math.draggingDist / this.pixelUnit);
+                          p5.push()
+                          p5.fill("#FFFFFF");
+                          // grayed out
+                          p5.fill("#FFFFFFDD");
+                          p5.circle(edgeX - (Math.sign(countUnits) * (jt + 1 / 2)) * this.pixelUnit, edgeY + evenRowsOffset + it * this.pixelUnit, this.pixelUnit * 0.98);
+                          p5.pop()
+                        }
+                      })
+
+                      p5.pop();
                     })
+                    // let oddCorrection = numRows % 2;
+                    // let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()]
+                    //   .map(it => it - ((numRows - 1) - oddCorrection) / 2)
+                    //   .map(it => [edgeX, edgeY - (it + 0.5 * ((oddCorrection + 1) % 2)) * this.pixelUnit])
+                    // // print("lineStarts:", lineStarts);
+                    // lineStarts.forEach(xy => p5.line(...xy, xy[0] + draggingDist, xy[1]));
 
-                  p5.pop();
-                  })
-                  // let oddCorrection = numRows % 2;
-                  // let lineStarts = [...Array(abs(this.steps[idx]) - 1).keys()]
-                  //   .map(it => it - ((numRows - 1) - oddCorrection) / 2)
-                  //   .map(it => [edgeX, edgeY - (it + 0.5 * ((oddCorrection + 1) % 2)) * this.pixelUnit])
-                  // // print("lineStarts:", lineStarts);
-                  // lineStarts.forEach(xy => p5.line(...xy, xy[0] + draggingDist, xy[1]));
-
-                  p5.pop();
-              }
+                    p5.pop();
+                  }
                   p5.push();
                   p5.stroke(this.edgeColor);
                   p5.strokeWeight(5);
@@ -7430,13 +7619,13 @@ const sketch =
                   numCols = -(countUnits);// + ((countUnits < 0) ? 1 : 0));
                   // if (this.showResizeEq) p5Inst.text(`${numRows} • ${numCols} = ${numRows * numCols}`, edgeX + (draggingDist / 2), edgeY);
                   if (this.showResizeEq && numRows != 0 && numCols != 0) {
-                             
-                     p5.text(`${verbalNumbers[numRows]}  ${Math.abs(numCols)}er ${(numCols > 0) ? "mehr" : "weniger"}`, edgeX + (draggingDist / 2), edgeY);
+
+                    p5.text(`${verbalNumbers[numRows]}  ${Math.abs(numCols)}er ${(numCols > 0) ? "mehr" : "weniger"}`, edgeX + (draggingDist / 2), edgeY);
                   }
-                  drawSizeDescription(this, -numCols, 0, draggingDirection)                  
+                  drawSizeDescription(this, -numCols, 0, draggingDirection)
                   // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX + (draggingDist / 2), edgeY);
                 }
-                
+
                 // if (countUnits < 0) countUnits += 1;
               }
 
@@ -7445,7 +7634,7 @@ const sketch =
 
           }
 
-         if (draggingVector.x == 0&& draggingVector.y == 0) {drawSizeDescription(this, 0, 0, undefined);}
+          if (draggingVector.x == 0 && draggingVector.y == 0) { drawSizeDescription(this, 0, 0, undefined); }
 
           // highlight edgepoints in active cut selection
           if (DEBUGMODE) {// {{{
@@ -7463,7 +7652,7 @@ const sketch =
             p5.pop();
           }// }}}
 
-          
+
           //@todo: not necessary any more
           // @refactor: add parameter/config for (un)cutabel?
           // draw the available cut Points
@@ -7819,7 +8008,7 @@ const sketch =
           // vdraw(p5Inst.createVector(100, 200, 0), 5, "#A1D5");
           // p5Inst.pop();
 
-          
+
           //@todo: not necessary any more
           // Drawing the features of the cut line
           // if (this.isCut) {
@@ -8046,7 +8235,13 @@ const sketch =
 
           // p5Inst.pop();
         }
-        p5.pop();
+        if (DEBUGMODE) {
+          p5.fill("#167959");
+          p5.circle(...this.loc.xy, 10);
+          p5.fill("#165979");
+          p5.circle(...this.referencePoint.xy, 10);
+          p5.pop();
+        }
       }//}}}
 
 
@@ -8123,9 +8318,10 @@ const sketch =
 
 
 
-    function saveUndoStep(tiles) {
+    function saveUndoStep(tiles, type) {
       // print("mouseTime:", undoTimestamp);
       // print("not last index:", (AppState.UNDOTREE.INDEX) < AppState.UNDOTREE.STEPS.length - 1);
+      if (!["MOVE", "SPLIT", "RESIZE"].includes(type)) throw new Error(`Only 'MOVE' and 'SPLIT' are allowed, given '${type}'`)
       if ((AppState.UNDOTREE.INDEX) < AppState.UNDOTREE.STEPS.length - 1) {
         if (AppState.UNDOTREE.INDEX == -1) {
           AppState.UNDOTREE.STEPS = [];
@@ -8136,13 +8332,15 @@ const sketch =
 
       // print("UNDOTree", (AppState.UNDOTREE));
       if (AppState.UNDOTREE.STEPS.length == 0) {
-        AppState.UNDOTREE.STEPS.push([tiles.serialize(), undoTimestamp]);
+        AppState.UNDOTREE.STEPS.push([tiles.serialize(), undoTimestamp, type]);
         AppState.UNDOTREE.INDEX += 1;
       } else {
         // print(AppState.UNDOTREE.STEPS[AppState.UNDOTREE.INDEX][1]);
         // print(undoTimestamp - AppState.UNDOTREE.STEPS[AppState.UNDOTREE.INDEX][1]);
-        if ((undoTimestamp - AppState.UNDOTREE.STEPS[AppState.UNDOTREE.INDEX][1]) > 100) {
-          AppState.UNDOTREE.STEPS.push([tiles.serialize(), undoTimestamp]);
+        let lastLabel = AppState.UNDOTREE.STEPS[AppState.UNDOTREE.INDEX][0].label;
+        let isOtherTiles = lastLabel != tiles.label;
+        if (isOtherTiles || (undoTimestamp - AppState.UNDOTREE.STEPS[AppState.UNDOTREE.INDEX][1]) > 100) {
+          AppState.UNDOTREE.STEPS.push([tiles.serialize(), undoTimestamp, type]);
           AppState.UNDOTREE.INDEX += 1;
 
         }
@@ -8157,10 +8355,13 @@ const sketch =
       // print("UNDOTree:", AppState.UNDOTREE)
     }
 
+
     function loadUndoStep() {
       print("mouseTime:", undoTimestamp);
       if (AppState.UNDOTREE.INDEX >= 0) {
+
         let serialized = AppState.UNDOTREE.STEPS[AppState.UNDOTREE.INDEX][0];
+        let isSplit = AppState.UNDOTREE.STEPS[AppState.UNDOTREE.INDEX][2] == "SPLIT";
         AppState.UNDOTREE.INDEX -= 1;
 
         //@refactor: copy-paste ::createFromOptions
@@ -8182,19 +8383,21 @@ const sketch =
           drawlinelocation: serialized.perimeterlinelocation,
           drawcolor: serialized.drawcolor,
           fillcolor: serialized.fillcolor,
+          starterfillcolor: serialized.starterfillcolor,
           edgecolor: serialized.edgecolor,
           fillstriped: serialized.fillstriped,
           label: serialized.label,
+          synced: serialized.synced
         }
 
 
         // print("UNDOTree:", AppState.UNDOTREE);
         let splitResults = Tiles.allTiles.filter(it => it.label.includes("|") && it.label.startsWith(options.label));
         splitResults.forEach(it => it.destruct());
-        let T = Tiles.createTiles(canvasBuffer.rF.P(...serialized.location), serialized.steps, serialized.startdirection, serialized.unit, options, serialized.resumedState);
+        let T = Tiles.createTiles(canvasBuffer.rF.P(...serialized.location), serialized.steps, serialized.startdirection, serialized.unit, options, serialized.resumedState, serialized.starterIndices);
         if (T.dragTriangles != undefined) T.updateDragTriangles();
 
-
+        if (isSplit && (AppState.CUTLIMIT >= 0)) AppState.CUTLIMIT += 1;
         return T;
       }
     }
@@ -8206,18 +8409,18 @@ const sketch =
       AppState.UNDOTREE.INDEX = AppState.UNDOTREE.INDEX - numSteps;
     }
 
-      function myfunction() {
-         if (navigator.userAgent.match(/Android/i)
-         || navigator.userAgent.match(/webOS/i)
-         || navigator.userAgent.match(/iPhone/i)
-         || navigator.userAgent.match(/iPad/i)
-         || navigator.userAgent.match(/iPod/i)
-         || navigator.userAgent.match(/BlackBerry/i)
-         || navigator.userAgent.match(/Windows Phone/i)) {
-            a = true ;
-         } else {
-            a = false ;
-         }
+    function myfunction() {
+      if (navigator.userAgent.match(/Android/i)
+        || navigator.userAgent.match(/webOS/i)
+        || navigator.userAgent.match(/iPhone/i)
+        || navigator.userAgent.match(/iPad/i)
+        || navigator.userAgent.match(/iPod/i)
+        || navigator.userAgent.match(/BlackBerry/i)
+        || navigator.userAgent.match(/Windows Phone/i)) {
+        a = true;
+      } else {
+        a = false;
+      }
       return a
     }
 
@@ -8230,7 +8433,7 @@ const sketch =
       isTouchDevice = navigator.maxTouchPoints > 0;
       print(`###:${outerWidth} x ${outerHeight}`)
       print(`###:${innerWidth} x ${innerHeight}`)
-      print(`On Mobile? ${isTouchDevice} ... ${navigator.maxTouchPoints}`)   
+      print(`On Mobile? ${isTouchDevice} ... ${navigator.maxTouchPoints}`)
       DEBUGFUNCS = [];
       //canvas and debug buffer
       canvasBuffer = setupCanvas();
@@ -8249,6 +8452,12 @@ const sketch =
         let [x, y] = initialConfig.undobuttonlocation;
         initialConfig.undobuttonlocation = canvasBuffer.rF.P(x, y).xy;
       }
+      if (initialConfig.redobuttonlocation == undefined) {
+        initialConfig.redobuttonlocation = canvasBuffer.rF.P(0.05, 0.13).xy
+      } else {
+        let [x, y] = initialConfig.redobuttonlocation;
+        initialConfig.redobuttonlocation = canvasBuffer.rF.P(x, y).xy;
+      }
       if (initialConfig.ref != undefined) {
         let stored = p5.getItem(`TILES:${initialConfig.ref}`)
         print("stored:", stored)
@@ -8259,15 +8468,22 @@ const sketch =
           isResumed = true;
         }
       }
+      if (initialConfig.cutlimit == undefined) {
+        initialConfig.cutlimit = -1;
+      }
       if (!isResumed) {
         AppState["RESULT"] = initialConfig.RESULT;
         AppState["ALWAYSRELOAD"] = initialConfig.alwaysreload;
         AppState["UNDOBUTTON"] = initialConfig.undobutton;
         AppState["UNDOBUTTONLOCATION"] = initialConfig.undobuttonlocation;
+        AppState["REDOBUTTON"] = initialConfig.redobutton;
+        AppState["REDOBUTTON"] = false;
+        AppState["REDOBUTTONLOCATION"] = initialConfig.redobuttonlocation;
         AppState["DESCBUTTON"] = true;
         AppState["DESCBUTTONLOCATION"] = canvasBuffer.rF.P(0.02, 0.03).xy;
         AppState["CUTBUTTON"] = true;
         AppState["CUTBUTTONLOCATION"] = canvasBuffer.rF.P(0.02, 0.08).xy;
+        AppState["CUTLIMIT"] = initialConfig.cutlimit;
         AppState["UNDOTREE"] = { STEPS: [], INDEX: -1 };
         AppState["INTERACTIVE"] = initialConfig.interactive;
         AppState["ID"] = initialConfig.id;
@@ -8301,22 +8517,28 @@ const sketch =
           drawlinelocation: T.perimeterlinelocation,
           drawcolor: T.perimetercolor,
           fillcolor: T.fillcolor,
+          starterfillcolor: T.starterfillcolor,
           edgecolor: T.edgecolor,
           fillstriped: T.fillstriped,
           label: T.label,
+          synced: T.synced
         }
         // on smartphons (small screens the default size is to small => 2x)
         let unit = T.unit;
-        if((screen.width < 1000)&&(screen.height<1000)) unit = [T.unit[0]*2.25, T.unit[1], T.unit[2]]
+        if ((screen.width < 1000) && (screen.height < 1000)) unit = [T.unit[0] * 2.25, T.unit[1], T.unit[2]]
         Tiles.createTiles(canvasBuffer.rF.P(...T.location), T.steps, T.startdirection, unit, options, T.resumedState);
 
 
       })
+      // add syncronization of movement  
+
+
       print("AppState:", AppState);
       countUnits = 0;
       draggingVector = p5.createVector(0, 0);
 
       undoButton = new clickCircle(...AppState["UNDOBUTTONLOCATION"], 35, null, "undoButton");
+      redoButton = new clickCircle(...AppState["REDOBUTTONLOCATION"], 35, null, "redoButton");
       descButton = new clickCircle(...AppState["DESCBUTTONLOCATION"], 35, null, "descButton");
       cutButton = new clickCircle(...AppState["CUTBUTTONLOCATION"], 35, null, "cutButton");
 
@@ -8379,14 +8601,14 @@ const sketch =
       p5.background(255);
 
       debugbuffer.setbackground();
-        
-    //     p5.push();
-    //  p5.textSize(50);
-    //  p5.fill("#0F0");
-    //  p5.stroke("#0F0");
-    // p5.text(`${innerWidth}x${innerHeight}: ${screen.width}x${screen.height}`, 100,100);
 
-    //  p5.pop();
+      //     p5.push();
+      //  p5.textSize(50);
+      //  p5.fill("#0F0");
+      //  p5.stroke("#0F0");
+      // p5.text(`${innerWidth}x${innerHeight}: ${screen.width}x${screen.height}`, 100,100);
+
+      //  p5.pop();
       // if (p5.frameCount % 120 == 0 ) frameRate = Math.floor(p5.frameRate())
       // p5.push();
       // p5.textSize(6);
@@ -8453,6 +8675,24 @@ const sketch =
 
       }
 
+      if (AppState.SHOWDESC) {
+        p5.push();
+        p5.print("WHAT!")
+        p5.stroke("#CCC");
+        p5.fill("#FFF");
+        let tiles = Tiles.allTiles.filter(it => it.isActive)[0];
+        if (tiles == undefined) tiles = { sizeDesc: "" };
+
+        //p5.rect(...canvasBuffer.rF.P(0.1, 0.1).xy, p5.textWidth(tiles.sizeDesc), canvasBuffer.rF.Py(0.15));
+        p5.stroke("#000");
+        p5.fill("#000");
+        p5.textSize(20);
+        p5.strokeWeight(0.25);
+        p5.text(`Beschreibung: „${tiles.sizeDesc}“`, ...canvasBuffer.rF.P(0.05, 0.035).xy);
+        p5.pop();
+
+      }
+
       Tiles.allTiles.filter(T => T.isVisible);
       p5.push();
 
@@ -8472,12 +8712,12 @@ const sketch =
         p5.fill("#AAA6");
         p5.circle(...undoButton.circle);
         p5.fill("#333");
-        p5.textAlign("center", "center")
         // p5Inst.textSize(40);
         // p5Inst.text("⮨", ...canvasBuffer.rF.P(0.98, 0.055).xy);
         let undoTriangle = nPointsOnCircle(3, p5.createVector(...AppState["UNDOBUTTONLOCATION"]), 0.8 * undoButton.diameter / 2, Math.PI);
 
         p5.triangle(...(undoTriangle.map(it => it.xy)).flat());
+        p5.textAlign("center", "center")
         p5.textSize(8);
         p5.fill("#AAA");
         p5.text(`${AppState.UNDOTREE.INDEX + 1}`, AppState["UNDOBUTTONLOCATION"][0] + 2, AppState["UNDOBUTTONLOCATION"][1] + 1);
@@ -8485,6 +8725,29 @@ const sketch =
           p5.noStroke();
           p5.fill("#AAA5");
           p5.circle(...undoButton.circle)
+        };
+        p5.pop();
+      }
+
+      if (AppState["REDOBUTTON"]) {
+        p5.push();
+        p5.fill("#AAA6");
+        p5.circle(...redoButton.circle);
+        p5.fill("#333");
+        p5.textAlign("center", "center")
+        // p5Inst.textSize(40);
+        // p5Inst.text("⮨", ...canvasBuffer.rF.P(0.98, 0.055).xy);
+        let redoTriangle = nPointsOnCircle(3, p5.createVector(...AppState["REDOBUTTONLOCATION"]), 0.8 * redoButton.diameter / 2, Math.PI);
+
+        p5.triangle(...(redoTriangle.map(it => it.xy)).flat());
+        p5.textSize(8);
+        p5.fill("#AAA");
+
+        p5.text(`${AppState.UNDOTREE.INDEX + 1}`, AppState["REDOBUTTONLOCATION"][0] + 2, AppState["REDOBUTTONLOCATION"][1] + 1);
+        if (AppState.UNDOTREE.INDEX < 0) {
+          p5.noStroke();
+          p5.fill("#AAA5");
+          p5.circle(...redoButton.circle)
         };
         p5.pop();
       }
@@ -8503,7 +8766,7 @@ const sketch =
         if (!AppState.SHOWDESC) {
           p5.stroke("#AAAD");
           p5.fill("#AAAD");
-        
+
           p5.circle(...descButton.circle)
         };
         p5.pop();
@@ -8517,50 +8780,56 @@ const sketch =
         p5.textSize(36);
         p5.textStyle("bold");
         //p5.text("✄", cutButton.x, cutButton.y);
-        p5.text("✂", cutButton.x, cutButton.y+3);
+        p5.text("✂", cutButton.x, cutButton.y + 3);
+        p5.textSize(12);
+        p5.textAlign("center", "top")
+        if (AppState["CUTLIMIT"] >= 0) {
+          if (AppState["CUTLIMIT"] == 0) p5.fill("#AA1122");
+          p5.text(`${AppState["CUTLIMIT"]}`, cutButton.x, cutButton.y + 6);
+        }
 
         p5.textSize(8);
         p5.fill("#AAA");
-         if (!AppState.ISCUTTING) {
-           p5.stroke("#AAAD");
-           p5.fill("#AAAD");
-           p5.circle(...cutButton.circle)
-         };
+        if (!AppState.ISCUTTING) {
+          p5.stroke("#AAAD");
+          p5.fill("#AAAD");
+          p5.circle(...cutButton.circle)
+        };
         p5.pop();
       }
 
-      if ((AppState["ISCUTTING"] && AppState["CUTSTART"] != undefined)){
+      if ((AppState["ISCUTTING"] && AppState["CUTSTART"] != undefined)) {
 
-      let endPoint = p5.mouseVec();
-      if (AppState["CUTEND"] != undefined) endPoint = AppState["CUTEND"];
+        let endPoint = p5.mouseVec();
+        if (AppState["CUTEND"] != undefined) endPoint = AppState["CUTEND"];
 
-      p5.push();
-      p5.push();
-      p5.stroke("#555");
-      p5.strokeWeight(2);
-      strokePattern(DASHED)
-      p5.line(...AppState["CUTSTART"].xy,...endPoint.xy);
-      //p5.print(lineLocationDirection(AppState["CUTSTART"],endPoint))
-      p5.fill("#595");
-      p5.circle(...vmult(vadd(AppState["CUTSTART"],endPoint),0.5).xy,10);
-      p5.pop();
-      let cutTile = Moveable.allMoveables.filter(m=>m.isCut);
+        p5.push();
+        p5.push();
+        p5.stroke("#555");
+        p5.strokeWeight(2);
+        strokePattern(DASHED)
+        p5.line(...AppState["CUTSTART"].xy, ...endPoint.xy);
+        //p5.print(lineLocationDirection(AppState["CUTSTART"],endPoint))
+        p5.fill("#595");
+        p5.circle(...vmult(vadd(AppState["CUTSTART"], endPoint), 0.5).xy, 10);
+        p5.pop();
+        let cutTile = Moveable.allMoveables.filter(m => m.isCut);
 
-      let cutLineVec = vunit(vsub(endPoint,AppState["CUTSTART"]));
-      let vec2Edge = undefined;
-      let vec2EdgeNorm = undefined;
-      let proj = undefined;
-      if ((cutTile != undefined) && (cutTile.length > 0)){
-      cutTile[0].edgePoints.map(p => cutTile[0].step2Vert()(p))
-        .forEach((p)=>{
-        p5.circle(...p.xy, 4);
-        vec2Edge = vsub(p, AppState["CUTSTART"]);
-        proj = vadd(AppState["CUTSTART"], vmult(cutLineVec, vdot(cutLineVec, vec2Edge)))
-        p5.circle(...proj.xy, 5);
-        //p5.circle(...p.xy,10);
-      })//filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
-      }
-      p5.pop();
+        let cutLineVec = vunit(vsub(endPoint, AppState["CUTSTART"]));
+        let vec2Edge = undefined;
+        let vec2EdgeNorm = undefined;
+        let proj = undefined;
+        if ((cutTile != undefined) && (cutTile.length > 0)) {
+          cutTile[0].edgePoints.map(p => cutTile[0].step2Vert()(p))
+            .forEach((p) => {
+              p5.circle(...p.xy, 4);
+              vec2Edge = vsub(p, AppState["CUTSTART"]);
+              proj = vadd(AppState["CUTSTART"], vmult(cutLineVec, vdot(cutLineVec, vec2Edge)))
+              p5.circle(...proj.xy, 5);
+              //p5.circle(...p.xy,10);
+            })//filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
+        }
+        p5.pop();
       }
       // print(p5Inst.mouseVec())
       // let T = Tiles.allTiles[Tiles.allTiles.length - 1];
@@ -8671,7 +8940,7 @@ const sketch =
 
         let clickTargets = [...Moveable.allMoveables.map(m => !m.mouseInArea()), ...[...Clickable.allClickables.values()].map(m => !m.isClicked)];
         if (prod(clickTargets) == 1) Moveable.allMoveables.forEach(m => {
-        // @todo: unnecessar
+          // @todo: unnecessar
           // if (m.isCuttable && m.isCut && m.currentCut.length < 2) {
           //   // copy-paste from handleCutting()
           //   m.currentCut = [];
@@ -8697,68 +8966,88 @@ const sketch =
           print("###AppState:")
           print(AppState)
         }
-        
-      if (AppState["UNDOBUTTON"] && undoButton.isClicked) {
+
+        if (AppState["UNDOBUTTON"] && undoButton.isClicked) {
 
           loadUndoStep()
         }
         if (AppState["DESCBUTTON"] && descButton.isClicked) {
-        AppState["SHOWDESC"] = !AppState["SHOWDESC"] ;
+          AppState["SHOWDESC"] = !AppState["SHOWDESC"];
         }
-
-      let activatedCutting = false;
-        if(AppState["CUTBUTTON"] && cutButton.isClicked) {
-        AppState["ISCUTTING"] = !AppState["ISCUTTING"] ;
-        AppState["CUTSTART"] = undefined;
-        AppState["CUTEND"] = undefined;
-        activatedCutting = true;
-
-
-        }
-      // Clicks inside of dotarrays or bottons do not count
-        let numCutClicks = -1;
-      if (prod(clickTargets) ==1){
-
-        if (! activatedCutting) {
-        if (AppState["ISCUTTING"]){
-          numCutClicks = 0;
-          if (AppState["CUTSTART"] != undefined) numCutClicks += 1;
-          if (AppState["CUTEND"] != undefined) numCutClicks += 1;
-        }
-        }
-        p5.print("numCutClicks", numCutClicks);
-
-
-        if((numCutClicks == 0)){
-          AppState["CUTSTART"] = p5.mouseVec();
-        }else if (numCutClicks == 1){
-          AppState["CUTEND"] = p5.mouseVec();
-        } else if (numCutClicks == 2){
+        let activatedCutting = false;
+        if (AppState["CUTBUTTON"] && cutButton.isClicked) {
+          AppState["ISCUTTING"] = !AppState["ISCUTTING"];
           AppState["CUTSTART"] = undefined;
           AppState["CUTEND"] = undefined;
-          numCutClicks = -1;
+          activatedCutting = true;
+
+
         }
-      }
-      // handle the cutting of tiles
-      if (numCutClicks > 0){
-        let endPoint = p5.mouseVec();
-        if (AppState["CUTEND"] != undefined) endPoint = AppState["CUTEND"];
-        let centerCutline = vmult(vadd(AppState["CUTSTART"],endPoint),0.5);
-        // @refactor: maybe the is not good enough
-        let cutTile = Moveable.allMoveables.filter(m => (m instanceof Tiles) && (m.pointInArea(centerCutline)))[0];
-        let cutLineLocDir = lineLocationDirection(AppState["CUTSTART"],endPoint);
-        
-        p5.print("handleCutting",cutTile);
-        
-        if (cutLineLocDir != undefined){
-          cutTile.handleCutting(cutLineLocDir);
+        if (AppState["CUTLIMIT"] != 0) {
+          // Clicks inside of dotarrays or bottons do not count
+          let numCutClicks = -1;
+          if (prod(clickTargets) == 1) {
+
+            if (!activatedCutting) {
+              if (AppState["ISCUTTING"]) {
+                numCutClicks = 0;
+                if (AppState["CUTSTART"] != undefined) numCutClicks += 1;
+                if (AppState["CUTEND"] != undefined) numCutClicks += 1;
+              }
+            }
+            p5.print("numCutClicks", numCutClicks);
+
+
+            if ((numCutClicks == 0)) {
+              AppState["CUTSTART"] = p5.mouseVec();
+            } else if (numCutClicks == 1) {
+              AppState["CUTEND"] = p5.mouseVec();
+            } else if (numCutClicks == 2) {
+              AppState["CUTSTART"] = undefined;
+              AppState["CUTEND"] = undefined;
+              numCutClicks = -1;
+            }
+          }
+          // handle the cutting of tiles
+          if (numCutClicks > 0) {
+            let cutStart = AppState["CUTSTART"];
+            let cutEnd = p5.mouseVec();
+            if (AppState["CUTEND"] != undefined) cutEnd = AppState["CUTEND"];
+            let centerCutline = vmult(vadd(cutStart, cutEnd), 0.5);
+            // @refactor: maybe the is not good enough
+            let cutTiles = Moveable.allMoveables.filter(m =>
+              (m instanceof Tiles) && (m.lineInArea(cutStart, cutEnd)));
+
+            let cutLineLocDir = lineLocationDirection(cutStart, cutEnd);
+
+            p5.print("handleCutting", cutTiles);
+            let startCount = Tiles.allTiles.length;
+            function sortByDist2CutStart(it, jt) {
+              let dist0 = vnorm(cutStart, it.boundingBoxCenter);
+              let dist1 = vnorm(cutStart, jt.boundingBoxCenter);
+              return dist1 - dist0
+            }
+            //if (AppState["CUTLIMIT"] >= 0) cutTiles = cutTiles.sort(sortByDist2CutStart).slice(0, AppState["CUTLIMIT"]);
+            if ((AppState["CUTLIMIT"] < 0) || (AppState["CUTLIMIT"] >= cutTiles.length)) {
+              cutTiles.forEach(it => {
+                if (cutLineLocDir != undefined) {
+                  it.handleCutting(cutLineLocDir);
+                }
+
+              })
+              AppState["CUTSTART"] = undefined;
+              AppState["CUTEND"] = undefined;
+              // if (inFrontMoveable.isCuttable) inFrontMoveable.handleCutting();
+              let endCount = Tiles.allTiles.length;
+              AppState["CUTLIMIT"] -= (endCount - startCount);
+            }
+          }
         }
-        // if (inFrontMoveable.isCuttable) inFrontMoveable.handleCutting();
-      }
 
 
-
+        //let inFrontMoveable = Moveable.inFront();
         let inFrontMoveable = Moveable.inFront();
+
         let allDragTriangles = Tiles.allTiles
           .filter(it => it.isResizable)
           .map(it => Object.values(it.dragTriangles))
@@ -8814,11 +9103,12 @@ const sketch =
         // print("allDragTriangles:", allDragTriangles);
         let tiles = Moveable.allMoveables.filter(it => it.label == draggingRect.label.split(":")[0])[0];
 
-        saveUndoStep(tiles);
+        saveUndoStep(tiles, "RESIZE");
         // print("dragTriangles", draggingTriangle, tiles);
         draggingVector = (vsub(p5.mouseVec(), p5.createVector(clickMouseX, clickMouseY)));
         // print("draggingVector", draggingVector)
 
+        p5.print("mouseDragged: tiles.referencePoint", tiles.referencePoint.xy)
 
       }
 
@@ -8849,8 +9139,13 @@ const sketch =
 
       } else {
         if (draggedTiles && !draggedTiles.isFrozen) {
-          saveUndoStep(draggedTiles)
+          saveUndoStep(draggedTiles, "MOVE")
           draggedTiles.mouseDragged();
+          draggedTiles.syncedTilesLabels.forEach(it => {
+            let sync = Tiles.allTiles.find(jt => jt.label == it);
+            p5.print("synced Tiles", sync);
+            sync.mouseDragged();
+          });
           // if (draggedMoveable instanceof Tiles) print(draggedMoveable.isEnclosedByTiles());
           // if (draggedMoveable instanceof Tiles) print(JSON.stringify(draggedMoveable.isEnclosedByTiles()));
         }
@@ -8874,7 +9169,7 @@ const sketch =
       //     }
 
       //   }
-    return false
+      return false
     }// }}}
 
 
@@ -8899,10 +9194,11 @@ const sketch =
         let idx = tiles.edgeOrientations.indexOf(draggingDirection);
         let clampedCountUnits;
         // print("countUnits:", countUnits);
+        let fixStarterIndices = [...Array(tiles.starterIndices.length).keys()].map(it => 0);
         if (draggingDirection == "North") {
-
+          clampedCountUnits = clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, 21);
           newSteps.push(Math.abs(tiles.steps[idx]));
-          newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, 21));
+          newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampedCountUnits);
           newSteps.push(-Math.abs(tiles.steps[idx]));
           newStartDirection = "x";
 
@@ -8912,13 +9208,23 @@ const sketch =
           newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampedCountUnits);
           newSteps.push(-Math.abs(tiles.steps[idx]));
           newStartDirection = "x";
-          tiles.referencePoint = vadd(p5.createVector(0, tiles.pixelUnit * clampedCountUnits), tiles.referencePoint);
+          //if (tiles.innerCenters.length > tiles.firstInnerCenters.length) fixFirstInnerCenters[1] = clampedCountUnits;
+          //clampedCountUnits;
+          let change = p5.createVector(0, tiles.pixelUnit * clampedCountUnits);
+          p5.print("mouseReleased: tiles.referencePoint", tiles.referencePoint.xy);
+          p5.print("mouseReleased: change", change.xy);
+          p5.print("vadd", vadd(change, tiles.referencePoint).xy);
+          tiles.referencePoint = vadd(change, tiles.referencePoint);
+          p5.print("mouseReleased: tiles.referencePoint", tiles.referencePoint.xy);
 
         } else if (draggingDirection == "East") {
-          newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, Number.POSITIVE_INFINITY));
+          clampedCountUnits = clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, Number.POSITIVE_INFINITY);
+          newSteps.push(Math.abs(tiles.steps[(idx + 1) % 4]) + clampedCountUnits);
           newSteps.push(Math.abs(tiles.steps[idx]));
-          newSteps.push(-(Math.abs(tiles.steps[(idx + 1) % 4]) + clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, Number.POSITIVE_INFINITY)));
+          newSteps.push(-(Math.abs(tiles.steps[(idx + 1) % 4]) + clampedCountUnits));
           newStartDirection = "x";
+          [...(Array(tiles.starterIndices.length).keys())].forEach(i => fixStarterIndices[i] = i * (clampedCountUnits));
+
 
         } else if (draggingDirection == "West") {
           clampedCountUnits = clampValue(countUnits, -Math.abs(tiles.steps[(idx + 1) % 4]) + 1, 21);
@@ -8926,7 +9232,12 @@ const sketch =
           newSteps.push(Math.abs(tiles.steps[idx]));
           newSteps.push(-(Math.abs(tiles.steps[(idx + 1) % 4]) + clampedCountUnits));
           newStartDirection = "x";
-          tiles.referencePoint = vadd(p5.createVector(-tiles.pixelUnit * clampedCountUnits, 0), tiles.referencePoint);
+          let change = p5.createVector(-tiles.pixelUnit * clampedCountUnits, 0);
+
+          p5.print("mouseReleased: change: tiles.referencePoint", change.xy);
+          tiles.referencePoint = vadd(change, tiles.referencePoint);
+
+          // if (tiles.innerCenters.length > tiles.firstInnerCenters.length) fixFirstInnerCenters[0] = clampedCountUnits;
         }
         print("appstate", (AppState["RESULT"] != ""), (AppState["RESULT"] == "height*length"));
         if ((AppState["RESULT"] != "") && AppState["RESULT"] == "height*length") {
@@ -8935,29 +9246,36 @@ const sketch =
         countUnits = 0;
 
         if (DEBUGMODE) print("new Steps:", newSteps)
+        p5.print("fixStarterIndcies", fixStarterIndices);
+        //let args = [tiles.referencePoint, newSteps, newStartDirection, tiles.unit,
+        // p5.print("mouseReleased: tiles.loc", tiles.referencePoint)
+        p5.print("mouseReleased: tiles.referencePoint", tiles.referencePoint.xy)
         let args = [tiles.referencePoint, newSteps, newStartDirection, tiles.unit,
         {
           empty: tiles.isEmpty,
           edgelabels: tiles.edgelabels,
           frozen: tiles.isFrozen,
           zorder: tiles.zorder,
-          resize: true,
+          resize: tiles.isResizable, // @fix: should be always true?
           resizecolor: tiles.dragTriangleColor,
           showresizeeq: tiles.showResizeEq,
           showsizedesc: tiles.showSizeDesc,
           cuttable: tiles.isCuttable,
           fillcolor: tiles.fillColor,
+          starterfillcolor: tiles.starterFillColor,
           fillstriped: tiles.fillStriped,
           edgecolor: tiles.edgeColor,
-          label: tiles.label
-        }]
+          label: tiles.label,
+          synced: tiles.synced
+        }, undefined, tiles.starterIndices.map((it, i) => it.map(jt => jt + fixStarterIndices[i]))];
+        // tiles.firstInnerCenters.map(it => [it[0] + fixFirstInnerCenters[0], it[1] - fixFirstInnerCenters[1]])]
         tiles.destruct();
         // let delIdxT = Tiles.allTiles.findIndex(it => it.label == tiles.label);
         // let delIdxM = Moveable.allMoveables.findIndex(it => it.label == tiles.label);
 
         // Tiles.allTiles.splice(delIdxT, 1);
         // Moveable.allMoveables.splice(delIdxM, 1);
-
+        p5.print("mouseReleased:args", args[0]);
         let T = Tiles.createTiles(...args);
         T.isActive = true;
         T.referencePoint = vadd(T.referencePoint, p5.createVector(0.1, 0.1));
@@ -8976,9 +9294,10 @@ const sketch =
       if (AppState["ID"] != undefined) {
         p5.storeItem(`TILES:${AppState["ID"]}`, p5.getDivomathVarState());
       }
-    draggingVector = p5.createVector(0,0);
+      draggingVector = p5.createVector(0, 0);
+      p5.print(Tiles.allTiles);
     }//}}}
-  return true
+    return true
   };
 
 
