@@ -1,3 +1,4 @@
+// const APPMODE = "CUTTING";
 const APPMODE = "RESIZING";
 const sketch =
 
@@ -7086,19 +7087,33 @@ const sketch =
         return [origin[0] + x, origin[1] + y];
       }
 
-      drawDotsByIndex(index, opt) {
-        let center = this.innerCenters[index];
-        if (center == undefined) {
-          return
-          // if (index == 4) p5.print(this.index2center(index, true));
-          // center = this.index2center(index, true);
-        };
-        p5.push();
-        if (opt.fill) p5.fill(opt.fill);
-        if (opt.stroke) p5.stroke(opt.stroke);
-        p5.strokeWeight(0);
-        p5.circle(...this.step2Vert()(center).xy, this.pixelUnit * 0.95);
-        p5.pop();
+      // styleDotsByIndex(index, opt) {
+      //   let center = this.innerCenters[index];
+      //   if (center == undefined) {
+      //     return
+      //     // if (index == 4) p5.print(this.index2center(index, true));
+      //     // center = this.index2center(index, true);
+      //   };
+      //   p5.push();
+      //   if (opt.fill) p5.fill(opt.fill);
+      //   if (opt.stroke) p5.stroke(opt.stroke);
+      //   p5.strokeWeight(0);
+      //   p5.circle(...this.step2Vert()(center).xy, this.pixelUnit * 0.95);
+      //   p5.pop();
+      // }
+      splitInnerCenterIndex(index) {
+        let colIndex = index % this.rectSideLengths.x;
+        let rowIndex = floor(index / this.rectSideLengths.x);
+        return { rowIndex: rowIndex, colIndex: colIndex }
+      }
+      colorByIndex(index) {
+        let idcs = this.splitInnerCenterIndex(index);
+        if ((idcs.colIndex < this.starterIndices[0].length) && (idcs.rowIndex < this.starterIndices.length)) {
+
+          return this.starterFillColor
+        }
+        return this.fillColor
+
       }
       draw() {//{{{
         p5.push();
@@ -7121,17 +7136,23 @@ const sketch =
                 if ((this.fillStriped) && (Math.abs(center.y - lastY) > 1e-3)) { idx = (idx + 1) % 2 }
                 //p5.fill(fillColors[idx]);
                 //p5.rect(...center.xy, this.pixelUnit, this.pixelUnit)
+                let color = this.colorByIndex(i);
+                p5.print("COLOR:", color);
                 p5.push();
-                p5.fill(this.fillColor);
+
+                p5.fill(color);
                 p5.strokeWeight(0);
-                p5.stroke(this.fillColor);
+                p5.stroke(color);
                 p5.circle(...center.xy, this.pixelUnit * 0.95);
+                p5.fill("#FFF");
+                if (DEBUGMODE) p5.text(`${i}`, ...center.xy, this.pixelUnit * 0.95);
+
                 p5.pop();
                 lastY = center.y;
               })
-            if (this.starterFillColor != undefined) {
-              this.starterIndices.flat().forEach((it) => this.drawDotsByIndex(it, { fill: this.starterFillColor, stroke: this.starterFillColor }));
-            }
+            // if (this.starterFillColor != undefined) {
+            //   this.starterIndices.flat().forEach((it) => this.drawDotsByIndex(it, { fill: this.starterFillColor, stroke: this.starterFillColor }));
+            // }
             // this.firstInnerCenters.map(it => String(it)).map((jt) => this.innerCenters.map(kt => String(kt)).includes(jt)).forEach(
             //   (isIn, i) => {
             //     if (isIn) {
@@ -7269,8 +7290,8 @@ const sketch =
                   shrinkSign = +1;
                   let draggingDist = clampValue(draggingVector.y, -Number.MAX_VALUE, (Math.abs(this.steps[(idx + 1) % 4]) - 1) * this.pixelUnit);
                   print(`${draggingDirection}: ${draggingVector}, ${draggingDist}`);
-                  [1, 3, 5].forEach(it => shiftTri[it] += draggingDist)
-                  p5.triangle(...shiftTri);
+                  [1, 3, 5].forEach(it => shiftTri[it] += draggingDist);
+                  //p5.triangle(...shiftTri);
                   [edgeX, edgeY] = vmult(vadd(...this.edges[idx]), 0.5).xy;
                   // print("drawing:", this.stepVerts2Verts()[idx])
 
@@ -7372,13 +7393,14 @@ const sketch =
                   // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX, edgeY + (draggingDist / 2));
 
                   drawSizeDescription(this, 0, numRows, draggingDirection)
+                  p5.fill(new chroma.Color(this.dragTriangleColor).darken(0.5).hex());
+                  p5.triangle(...shiftTri);
                 } else if (draggingDirection == "South") {
                   shrinkSign = -1;
                   numCols = abs(this.steps[idx]);
                   let draggingDist = clampValue(draggingVector.y, -(Math.abs(this.steps[(idx + 1) % 4]) - 1) * this.pixelUnit, Number.MAX_VALUE);
                   print(`${draggingDirection}: ${draggingDist}`);
-                  [1, 3, 5].forEach(it => shiftTri[it] += draggingDist)
-                  p5.triangle(...shiftTri);
+                  [1, 3, 5].forEach(it => shiftTri[it] += draggingDist);
                   [edgeX, edgeY] = vmult(vadd(...this.edges[idx]), 0.5).xy;
                   // print("drawing:", this.stepVerts2Verts()[idx])
                   p5.rectMode(p5.CENTER);
@@ -7400,29 +7422,49 @@ const sketch =
 
                       // p5.rect(edgeX, edgeY + Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit, Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
                       p5.push();
-                      p5.fill(this.fillColor);
-                      p5.strokeWeight(0);
-                      p5.stroke(this.fillColor);
                       // p5.circle(edgeX, edgeY + Math.sign(countUnits) * (jt + 1/2) * this.pixelUnit, this.pixelUnit*0.95);
                       // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
                       evenColumnsOffset = (numCols % 2 == 0) ? -this.pixelUnit / 2 : 0;
                       dotPositions = [...Array(numCols).keys()];
-
+                      let shift = 0;
                       if (numCols % 2 == 1) {
+                        shift = floor(numCols / 2);
                         dotPositions = dotPositions.map(it => it - floor(numCols / 2));
+
                       } else {
+                        shift = floor((numCols - 1) / 2);
                         dotPositions = dotPositions.map(it => it - floor((numCols - 1) / 2));
                         dotPositions.push(numCols / 2)
                       }
+                      let isShrunk = Math.sign(draggingDist) == shrinkSign;
                       dotPositions.forEach(it => {
+                        let isStarterRow = (this.rectSideLengths.y + jt) < this.starterIndices.length;
+                        if (isShrunk) {
+                          isStarterRow = (this.rectSideLengths.y - jt) <= this.starterIndices.length;
+                        }
+
+                        let isStarterCol = (it + shift) < this.starterIndices[0].length;
+                        if (isStarterRow && isStarterCol) {
+                          p5.print("in Starter", it, jt)
+                          p5.print((this.rectSideLengths.x + it), this.starterIndices[0].length, (this.rectSideLengths.y + jt), this.starterIndices.length);
+                          p5.fill(this.starterFillColor);
+                          p5.strokeWeight(0);
+                          p5.stroke(this.starterFillColor);
+                        } else {
+                          p5.print("not in Starter", isStarterCol, isStarterRow, it, jt)
+                          p5.print((this.rectSideLengths.x + jt), this.starterIndices[0].length, (this.rectSideLengths.y + it), this.starterIndices.length);
+                          p5.fill(this.fillColor);
+                          p5.strokeWeight(0);
+                          p5.stroke(this.fillColor);
+                        }
                         p5.circle(edgeX + evenColumnsOffset + it * this.pixelUnit, edgeY + Math.sign(countUnits) * (jt + 1 / 2) * this.pixelUnit, this.pixelUnit * 0.95);
 
                         if ((Math.sign(draggingDist) == shrinkSign)) {
                           let numShrunkRows = Math.round(Math.draggingDist / this.pixelUnit);
                           p5.push()
-                          p5.fill("#FFFFFF");
-                          // grayed out
-                          p5.fill("#FFFFFFDD");
+                          p5.fill("#FFFFFFFA");
+
+                          if (isStarterRow && isStarterCol) p5.fill("#FFFFFFED");
                           p5.circle(edgeX + evenColumnsOffset + it * this.pixelUnit, edgeY + Math.sign(countUnits) * (jt + 1 / 2) * this.pixelUnit, this.pixelUnit * 0.98);
                           p5.pop()
                         }
@@ -7453,12 +7495,15 @@ const sketch =
                   }
                   // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX, edgeY + (draggingDist / 2));
                   drawSizeDescription(this, 0, numRows, draggingDirection)
+
+                  p5.fill(new chroma.Color(this.dragTriangleColor).darken(0.5).hex());
+                  p5.triangle(...shiftTri);
                 } else if (draggingDirection == "East") {
                   shrinkSign = -1;
                   let draggingDist = clampValue(draggingVector.x, -(Math.abs(this.steps[(idx + 1) % 4]) - 1) * this.pixelUnit, Number.MAX_VALUE);
                   print(`${draggingDirection}: ${draggingDist}`);
-                  [0, 2, 4].forEach(it => shiftTri[it] += draggingDist)
-                  p5.triangle(...shiftTri);
+                  [0, 2, 4].forEach(it => shiftTri[it] += draggingDist);
+                  //p5.triangle(...shiftTri);
                   p5.fill("#8884");
                   [edgeX, edgeY] = vmult(vadd(...this.edges[idx]), 0.5).xy;
                   // print("drawing:", edgeX, vmult(vadd(...this.edges[idx]), 0.5));
@@ -7482,9 +7527,6 @@ const sketch =
                       }
                       // p5.rect(edgeX + (Math.sign(countUnits) * (jt + 1)) * this.pixelUnit / 2, edgeY, Math.sign(countUnits) * (jt + 1) * this.pixelUnit, this.steps[idx] * this.pixelUnit);
                       p5.push();
-                      p5.fill(this.fillColor);
-                      p5.strokeWeight(0);
-                      p5.stroke(this.fillColor);
 
                       // p5.circle(edgeX + (Math.sign(countUnits) * (jt + 1/2)) * this.pixelUnit, edgeY, this.pixelUnit*0.95);
                       // p5.circle(edgeX, edgeY - Math.sign(countUnits) * (jt + 1) * this.pixelUnit / 2, this.steps[idx] * this.pixelUnit);// Math.sign(countUnits) * (jt + 1) * this.pixelUnit);
@@ -7496,24 +7538,53 @@ const sketch =
                       //   p5.stroke(this.starterFillColor);
                       //
                       // }
-
+                      let shift = null;
                       if (numRows % 2 == 1) {
                         dotPositions = dotPositions.map(it => it - floor(numRows / 2));
+                        shift = floor(numRows / 2);
                       } else {
                         dotPositions = dotPositions.map(it => it - floor((numRows - 1) / 2));
+                        shift = floor((numRows - 1) / 2);
                         dotPositions.push(numRows / 2)
                       }
+                      let isShrunk = ((Math.sign(draggingDist) == shrinkSign));
+                      let numShrunkCols = Math.round(Math.draggingDist / this.pixelUnit);
                       dotPositions.forEach(it => {
-                        p5.circle(edgeX + (Math.sign(countUnits) * (jt + 1 / 2)) * this.pixelUnit, edgeY + evenRowsOffset + it * this.pixelUnit, this.pixelUnit * 0.95);
+                        let isStarterCol = (this.rectSideLengths.x + jt) < this.starterIndices[0].length;;
+                        if (isShrunk) {
+                          isStarterCol = (this.rectSideLengths.x - jt) <= this.starterIndices[0].length;
+                        }
 
+                        let isStarterRow = (it + shift) < this.starterIndices.length;
+                        if (isStarterRow && isStarterCol) {
+                          p5.print("in Starter", it, jt)
+                          p5.print((this.rectSideLengths.x + it), this.starterIndices[0].length, (this.rectSideLengths.y + jt), this.starterIndices.length);
+                          p5.fill(this.starterFillColor);
+                          p5.strokeWeight(0);
+                          p5.stroke(this.starterFillColor);
+                        } else {
+                          p5.print("not in Starter", isStarterCol, isStarterRow, it, jt)
+                          p5.print((this.rectSideLengths.x + jt), this.starterIndices[0].length, (this.rectSideLengths.y + it), this.starterIndices.length);
+                          p5.fill(this.fillColor);
+                          p5.strokeWeight(0);
+                          p5.stroke(this.fillColor);
+                        }
+                        p5.circle(edgeX + (Math.sign(countUnits) * (jt + 1 / 2)) * this.pixelUnit, edgeY + evenRowsOffset + it * this.pixelUnit, this.pixelUnit * 0.95);
                         if ((Math.sign(draggingDist) == shrinkSign)) {
                           let numShrunkCols = Math.round(Math.draggingDist / this.pixelUnit);
                           p5.push()
-                          p5.fill("#FFFFFF");
+                          //p5.fill("#FFFFFF");
                           // grayed out
-                          p5.fill("#FFFFFFDD");
+                          p5.fill("#FFFFFFFA");
+
+                          if (isStarterRow && isStarterCol) p5.fill("#FFFFFFED");
                           p5.circle(edgeX + (Math.sign(countUnits) * (jt + 1 / 2)) * this.pixelUnit, edgeY + evenRowsOffset + it * this.pixelUnit, this.pixelUnit * 0.98);
                           p5.pop()
+                        }
+                        if (DEBUGMODE) {
+                          p5.fill("#FFF");
+                          p5.textSize(10);
+                          p5.text(`${[jt, it]}`, edgeX + (Math.sign(countUnits) * (jt + 1 / 2)) * this.pixelUnit, edgeY + evenRowsOffset + it * this.pixelUnit);
                         }
                       })
 
@@ -7543,12 +7614,14 @@ const sketch =
                   // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX + (draggingDist / 2), edgeY);
 
                   drawSizeDescription(this, numCols, 0, draggingDirection)
+                  p5.fill(new chroma.Color(this.dragTriangleColor).darken(0.5).hex());
+                  p5.triangle(...shiftTri);
                 } else if (draggingDirection == "West") {
                   shrinkSign = 1;
                   let draggingDist = clampValue(draggingVector.x, -Number.MAX_VALUE, (Math.abs(this.steps[(idx + 1) % 4]) - 1) * this.pixelUnit);
                   print(`${draggingDirection}: ${draggingDist}`);
                   [0, 2, 4].forEach(it => shiftTri[it] += (draggingDist))
-                  p5.triangle(...shiftTri);
+                  //p5.triangle(...shiftTri);
                   p5.fill("#8884");
                   [edgeX, edgeY] = vmult(vadd(...this.edges[idx]), 0.5).xy;
                   // print("drawing:", edgeX, vmult(vadd(...this.edges[idx]), 0.5));
@@ -7624,6 +7697,8 @@ const sketch =
                   }
                   drawSizeDescription(this, -numCols, 0, draggingDirection)
                   // p5Inst.text(`${countUnits + ((countUnits < 0) ? 1 : 0)}`, edgeX + (draggingDist / 2), edgeY);
+                  p5.fill(new chroma.Color(this.dragTriangleColor).darken(0.5).hex());
+                  p5.triangle(...shiftTri);
                 }
 
                 // if (countUnits < 0) countUnits += 1;
@@ -8037,184 +8112,187 @@ const sketch =
           //   }
           //   p5.pop();
           // }
-          if (this.isDrawable) {
-            let currentColor = this.drawColors[0];
-            //let colors = [];
-            if (this.isActive && !this.isDrawn) {
-              this.verts.forEach(
-                (vert, i) => {
-                  //@refactor: perimete color
-                  p5.fill(currentColor);
-                  p5.noStroke();
-                  p5.circle(...vert.xy, this.pixelUnit / 4);
-                });
-            }
+          //
 
-            if (this.isActive && this.isDrawn) {
-              [...this.availableDraws, ...this.currentDraw.slice(-1)].forEach(
-                (vert, i) => {
-                  //@refactor: perimete color
-                  p5.fill(currentColor);
-                  p5.noStroke();
-                  p5.circle(...vert.xy, this.pixelUnit / 4);
-                });
+          // @remove: Drawing is not necessary in this App
+          // if (this.isDrawable) {
+          //   let currentColor = this.drawColors[0];
+          //   //let colors = [];
+          //   if (this.isActive && !this.isDrawn) {
+          //     this.verts.forEach(
+          //       (vert, i) => {
+          //         //@refactor: perimete color
+          //         p5.fill(currentColor);
+          //         p5.noStroke();
+          //         p5.circle(...vert.xy, this.pixelUnit / 4);
+          //       });
+          //   }
+          //
+          //   if (this.isActive && this.isDrawn) {
+          //     [...this.availableDraws, ...this.currentDraw.slice(-1)].forEach(
+          //       (vert, i) => {
+          //         //@refactor: perimete color
+          //         p5.fill(currentColor);
+          //         p5.noStroke();
+          //         p5.circle(...vert.xy, this.pixelUnit / 4);
+          //       });
+          //
+          //   }
+          //   p5.strokeWeight(5);
+          //
+          //   if (this.showDrawLine) {
+          //     p5.push();
+          //
+          //     p5.stroke("black");
+          //     p5.strokeCap(p5.SQUARE)
+          //     this.drawLine.forEach((it, i) => {
+          //       if (i >= 1) {
+          //         p5.line(...this.drawLine[i - 1].xy, ...it.xy);
+          //       }
+          //     })
+          //     let endPoints = [this.drawLine[0], this.drawLine[this.drawLine.length - 1]];
+          //     endPoints.forEach((it, i) => {
+          //       p5.push();
+          //       p5.stroke("black");
+          //       p5.strokeWeight(2);
+          //       p5.line(it.x, it.y + 0.2 * this.pixelUnit, it.x, it.y - 0.2 * this.pixelUnit);
+          //       p5.pop();
+          //     })
+          //     p5.pop();
+          //   }
+          //   let strokeColors = [...Array(this.steps.length + 2).keys()].map(it => (it % 2) ? currentColor : this.drawColors[1]);
+          //   this.currentDraw.forEach(
+          //     (vert, i) => {
+          //       currentColor = (i % 2) ? this.drawColors[0] : this.drawColors[1];
+          //
+          //       if (i < (this.currentDraw.length - 1)) {
+          //         p5.stroke(currentColor);
+          //         p5.line(...vert.xy, ...this.currentDraw[i + 1].xy);
+          //       }
+          //
+          //
+          //     })
+          //   if (this.showDrawLine && (this.drawDistances != undefined)) {
+          //     this.markedLine.forEach((it, i) => {
+          //       if (i >= 1) {
+          //         let color = ((i - 1) % 2) ? this.drawColors[0] : this.drawColors[1];
+          //         p5.stroke(color);
+          //         p5.strokeCap(p5.SQUARE);
+          //         p5.line(...this.markedLine[i - 1].xy, ...it.xy);
+          //       }
+          //     })
+          //     this.markedLine.forEach((it, i) => {
+          //       p5.push();
+          //       p5.fill("black")
+          //       p5.stroke("black");
+          //       p5.strokeWeight(2);
+          //       p5.line(it.x, it.y + 0.2 * this.pixelUnit, it.x, it.y - 0.2 * this.pixelUnit);
+          //       p5.pop();
+          //     })
+          //   }
+          // colors.push((colors[colors.length - 1] == currentColor) ? "#CA8FFC" : currentColor);
+          // let diff;
+          // let lastMarked;
+          // let last = this.currentDraw[this.currentDraw.length - 1];
+          // if (last != undefined) {
 
-            }
-            p5.strokeWeight(5);
+          // if (DYNAMICDRAW) {
+          //
+          //   this.availableDraws.forEach((it, i) => {
+          //     // print("last", last, "next", it)
+          //     let maxDist = vsub(it, last).mag();
+          //     if ((vsub(p5.mouseVec(), it).mag() < maxDist)) {
+          //
+          //       let mouseVec = p5.mouseVec();
+          //       if (vsub(mouseVec, last).mag() > maxDist) { mouseVec = it };
+          //       // print("dists:", vdist(it, last), vsub(mouseVec, it).mag());
+          //       let nextEdge = vunit(vsub(it, last));
+          //       let dotProd = vdot(nextEdge, vsub(mouseVec, last));
+          //
+          //       let projectedMouse = vadd(last,
+          //         vmult(nextEdge, dotProd));
+          //
+          //       // if ((this.drawBetween == undefined) || (this.drawBetween.mag() < projectedMouse.mag())) {
+          //       this.drawBetween = projectedMouse;
+          //       // }
+          //       // colors.push(strokeColors[this.edgeIndexOfVert(it)])
+          //       p5.stroke(currentColor);
+          //       p5.line(...last.xy, ...this.drawBetween.xy);
+          //
+          //
+          //       if (this.showDrawLine && (this.drawDistances != undefined)) {
+          //
+          //         p5.stroke(currentColor);
+          //         p5.strokeCap(p5.SQUARE);
+          //         // if (this.currentDraw.length != this.verts.length) {
+          //         // print(this.currentDraw.length, this.verts.length);
+          //         diff = vsub(this.drawBetween, last).mag();
+          //
+          //         lastMarked = this.markedLine[this.markedLine.length - 1].xy;
+          //         p5.line(...lastMarked, ...vadd(p5.createVector(diff, 0), lastMarked).xy);
+          //         // } else {
+          //         //   diff = vsub(this.drawBetween, last).mag();
+          //         //   lastMarked = this.markedLine[this.markedLine.length - 1].xy;
+          //         //   print(vsub(lastMarked, vadd(p5Inst.createVector(diff, 0), lastMarked).xy));
+          //         // }
+          //
+          //       }
+          //     }
+          //   })
+          // } else if (this.drawBetween != undefined) {
+          //   // print("else-if:", ...last.xy, ...this.drawBetween.xy)
+          //   // p5Inst.stroke(otherColor(currentColor));
+          //   if (this.currentDraw.length != (this.verts.length + 1)) {
+          //     p5.stroke(currentColor);
+          //     p5.line(...last.xy, ...this.drawBetween.xy);
+          //
+          //     diff = vsub(this.drawBetween, last).mag();
+          //     if (this.showDrawLine && (this.drawDistances != undefined)) {
+          //
+          //       // print("diff", diff)
+          //       // p5Inst.stroke(strokeColors[i - 1]);
+          //       p5.stroke(currentColor);
+          //       p5.strokeCap(p5.SQUARE);
+          //       lastMarked = this.markedLine[this.markedLine.length - 1].xy;
+          //       p5.line(...lastMarked, ...vadd(p5.createVector(diff, 0), lastMarked).xy);
+          //     }
+          //   }
+          //
+          // }
 
-            if (this.showDrawLine) {
-              p5.push();
-
-              p5.stroke("black");
-              p5.strokeCap(p5.SQUARE)
-              this.drawLine.forEach((it, i) => {
-                if (i >= 1) {
-                  p5.line(...this.drawLine[i - 1].xy, ...it.xy);
-                }
-              })
-              let endPoints = [this.drawLine[0], this.drawLine[this.drawLine.length - 1]];
-              endPoints.forEach((it, i) => {
-                p5.push();
-                p5.stroke("black");
-                p5.strokeWeight(2);
-                p5.line(it.x, it.y + 0.2 * this.pixelUnit, it.x, it.y - 0.2 * this.pixelUnit);
-                p5.pop();
-              })
-              p5.pop();
-            }
-            let strokeColors = [...Array(this.steps.length + 2).keys()].map(it => (it % 2) ? currentColor : this.drawColors[1]);
-            this.currentDraw.forEach(
-              (vert, i) => {
-                currentColor = (i % 2) ? this.drawColors[0] : this.drawColors[1];
-
-                if (i < (this.currentDraw.length - 1)) {
-                  p5.stroke(currentColor);
-                  p5.line(...vert.xy, ...this.currentDraw[i + 1].xy);
-                }
-
-
-              })
-            if (this.showDrawLine && (this.drawDistances != undefined)) {
-              this.markedLine.forEach((it, i) => {
-                if (i >= 1) {
-                  let color = ((i - 1) % 2) ? this.drawColors[0] : this.drawColors[1];
-                  p5.stroke(color);
-                  p5.strokeCap(p5.SQUARE);
-                  p5.line(...this.markedLine[i - 1].xy, ...it.xy);
-                }
-              })
-              this.markedLine.forEach((it, i) => {
-                p5.push();
-                p5.fill("black")
-                p5.stroke("black");
-                p5.strokeWeight(2);
-                p5.line(it.x, it.y + 0.2 * this.pixelUnit, it.x, it.y - 0.2 * this.pixelUnit);
-                p5.pop();
-              })
-            }
-            // colors.push((colors[colors.length - 1] == currentColor) ? "#CA8FFC" : currentColor);
-            let diff;
-            let lastMarked;
-            let last = this.currentDraw[this.currentDraw.length - 1];
-            if (last != undefined) {
-
-              if (DYNAMICDRAW) {
-
-                this.availableDraws.forEach((it, i) => {
-                  // print("last", last, "next", it)
-                  let maxDist = vsub(it, last).mag();
-                  if ((vsub(p5.mouseVec(), it).mag() < maxDist)) {
-
-                    let mouseVec = p5.mouseVec();
-                    if (vsub(mouseVec, last).mag() > maxDist) { mouseVec = it };
-                    // print("dists:", vdist(it, last), vsub(mouseVec, it).mag());
-                    let nextEdge = vunit(vsub(it, last));
-                    let dotProd = vdot(nextEdge, vsub(mouseVec, last));
-
-                    let projectedMouse = vadd(last,
-                      vmult(nextEdge, dotProd));
-
-                    // if ((this.drawBetween == undefined) || (this.drawBetween.mag() < projectedMouse.mag())) {
-                    this.drawBetween = projectedMouse;
-                    // }
-                    // colors.push(strokeColors[this.edgeIndexOfVert(it)])
-                    p5.stroke(currentColor);
-                    p5.line(...last.xy, ...this.drawBetween.xy);
-
-
-                    if (this.showDrawLine && (this.drawDistances != undefined)) {
-
-                      p5.stroke(currentColor);
-                      p5.strokeCap(p5.SQUARE);
-                      // if (this.currentDraw.length != this.verts.length) {
-                      // print(this.currentDraw.length, this.verts.length);
-                      diff = vsub(this.drawBetween, last).mag();
-
-                      lastMarked = this.markedLine[this.markedLine.length - 1].xy;
-                      p5.line(...lastMarked, ...vadd(p5.createVector(diff, 0), lastMarked).xy);
-                      // } else {
-                      //   diff = vsub(this.drawBetween, last).mag();
-                      //   lastMarked = this.markedLine[this.markedLine.length - 1].xy;
-                      //   print(vsub(lastMarked, vadd(p5Inst.createVector(diff, 0), lastMarked).xy));
-                      // }
-
-                    }
-                  }
-                })
-              } else if (this.drawBetween != undefined) {
-                // print("else-if:", ...last.xy, ...this.drawBetween.xy)
-                // p5Inst.stroke(otherColor(currentColor));
-                if (this.currentDraw.length != (this.verts.length + 1)) {
-                  p5.stroke(currentColor);
-                  p5.line(...last.xy, ...this.drawBetween.xy);
-
-                  diff = vsub(this.drawBetween, last).mag();
-                  if (this.showDrawLine && (this.drawDistances != undefined)) {
-
-                    // print("diff", diff)
-                    // p5Inst.stroke(strokeColors[i - 1]);
-                    p5.stroke(currentColor);
-                    p5.strokeCap(p5.SQUARE);
-                    lastMarked = this.markedLine[this.markedLine.length - 1].xy;
-                    p5.line(...lastMarked, ...vadd(p5.createVector(diff, 0), lastMarked).xy);
-                  }
-                }
-
-              }
-
-            }
-
-
-
-            // this.currentDraw.forEach(
-            //   (vert, i) => {
-            //     //@refactor: perimete color
-            //     p5Inst.fill("#003BD8");
-            //     p5Inst.noStroke();
-            //     p5Inst.circle(...vert.xy, 10);
-            //   });
-            // this.availableDraws.forEach(
-            //   (vert, i) => {
-            //     //@refactor: perimete color
-            //     p5Inst.fill("#960000");
-            //     p5Inst.noStroke();
-            //     p5Inst.circle(...vert.xy, 10);
-            //   });
-
-            // this.verts.forEach(
-            //   (vert, i) => {
-            //     p5Inst.fill("#FFFF");
-            //     p5Inst.stroke("#FFF5");
-            //     // p5Inst.circle(...vert.xy, 15);
-            //     p5Inst.fill("#FFF");
-            //     p5Inst.textAlign(p5Inst.CENTER, p5Inst.CENTER);
-            //     p5Inst.textSize(16);
-            //     p5Inst.text(`${i}`, ...vert.xy);
-            //   });
+          // }
 
 
 
-          }
+          // this.currentDraw.forEach(
+          //   (vert, i) => {
+          //     //@refactor: perimete color
+          //     p5Inst.fill("#003BD8");
+          //     p5Inst.noStroke();
+          //     p5Inst.circle(...vert.xy, 10);
+          //   });
+          // this.availableDraws.forEach(
+          //   (vert, i) => {
+          //     //@refactor: perimete color
+          //     p5Inst.fill("#960000");
+          //     p5Inst.noStroke();
+          //     p5Inst.circle(...vert.xy, 10);
+          //   });
+
+          // this.verts.forEach(
+          //   (vert, i) => {
+          //     p5Inst.fill("#FFFF");
+          //     p5Inst.stroke("#FFF5");
+          //     // p5Inst.circle(...vert.xy, 15);
+          //     p5Inst.fill("#FFF");
+          //     p5Inst.textAlign(p5Inst.CENTER, p5Inst.CENTER);
+          //     p5Inst.textSize(16);
+          //     p5Inst.text(`${i}`, ...vert.xy);
+          //   });
+
+
+
+          // }
 
           // p5Inst.push();
           // p5Inst.fill("#A89A89");
