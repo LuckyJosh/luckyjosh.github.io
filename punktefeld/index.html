@@ -1,8 +1,123 @@
+<!DOCTYPE html>
 <meta charset="UTF-8">
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+<script>
+function getRows(){
+  return document.getElementsByName("nrows")[0].selectedOptions[0].value
+}
+function getCols(){
+  return document.getElementsByName("ncols")[0].selectedOptions[0].value
+}
 
+function getCuts(){
+  return document.getElementsByName("ncuts")[0].selectedOptions[0].value
+}
+function getLink(mode){
+  let url = `./${mode}/component-dotarray.html?rows=${getRows()}&cols=${getCols()}`
+  if (mode == "cutting"){
+    url += `&cuts=${getCuts()}`
+  }
+  window.location.href = url;
+
+}
+
+</script>
+<body>
 <p>
   <!-- <a href="build/App-Gewichte.html">Link zur Gewichte App </a> <br> -->
   <!-- <a href="build/link-generator.html">Link Generator</a> <br> -->
-  <a href="./cutting/component-dotarray.html">Link zur Zerschneiden-Variante</a> <br>
-  <a href="./resizing/component-dotarray.html">Link zur Vergrößerungs/-kleinerungs-Variante</a> <br>
+  <div style="text-align:center; margin-top:15%"  >
+<div class="grid-container">
+  <div></div>
+  <figure class="link">
+    <a onclick="getLink('cutting');">
+    <img src="./assets/mode-cutting.jpg" height="350px" alt="Link zur Zerschneiden-Variante"/>
+    </a>
+<figcaption>Link zur Zerschneiden-Variante</figcaption>
+  </figure>
+  <div style="margin-top:10px">
+  <b>Auswahl Startgröße:</b><br>
+<form>
+  <select id="nrows" name="nrows" >
+     <option value="1">1</option>
+     <option value="2">2</option>
+     <option value="3">3</option>
+     <option value="4">4</option>
+     <option value="5" selected="selected">5</option>
+     <option value="6">6</option>
+     <option value="7">7</option>
+     <option value="8">8</option>
+     <option value="9">9</option>
+    <option value="10">10</option>
+    <option value="11">11</option>
+    <option value="12">12</option>
+    <option value="13">13</option>
+    <option value="14">14</option>
+    <option value="15">15</option>
+    <option value="16">16</option>
+  </select>
+  ×
+  <select id="ncols" name="ncols" >
+     <option value="1">1</option>
+     <option value="2">2</option>
+     <option value="3">3</option>
+     <option value="4">4</option>
+     <option value="5" selected="selected">5</option>
+     <option value="6">6</option>
+     <option value="7">7</option>
+     <option value="8">8</option>
+     <option value="9">9</option>
+    <option value="10">10</option>
+    <option value="11">11</option>
+    <option value="12">12</option>
+    <option value="13">13</option>
+    <option value="14">14</option>
+    <option value="15">15</option>
+    <option value="16">16</option>
+    <option value="17">17</option>
+    <option value="18">18</option>
+    <option value="19">19</option>
+    <option value="20">20</option>
+    <option value="20">21</option>
+    <option value="20">22</option>
+    <option value="20">23</option>
+    <option value="20">24</option>
+  </select>
+</form>
+
+<div style="margin-top:150px">
+  
+  <b>Anzahl erlaubter Schnitte:</b><br>
+
+<form>
+  <select id="ncuts" name="ncuts" >
+     <option value="1">1</option>
+     <option value="2">2</option>
+     <option value="3">3</option>
+     <option value="4">4</option>
+     <option value="5" selected="selected">5</option>
+     <option value="6">6</option>
+     <option value="7">7</option>
+     <option value="8">8</option>
+     <option value="9">9</option>
+     <option value="10">10</option>
+    
+  </select>
+</form>
+</div>
+  </div>
+  <figure class="link-resizing">
+        <a onclick="getLink('resizing');">
+          <img src="./assets/mode-resizing.jpg" height="350px" alt="Link zur Vergrößerungs/-kleinerungs-Variante"/>
+        </a>
+<figcaption>Link zur Vergrößerungs/-kleinerungs-Variante</figcaption>
+  </figure>
+  <div></div>
+</div>
+  </div>
 </p>
+</body>
+<html>
