@@ -1,5 +1,7 @@
-// const APPMODE = "CUTTING";
-const APPMODE = "RESIZING";
+const APPMODE = (window.location.toString().includes("cutting")) ? "CUTTING" : "RESIZING";
+
+
+// const APPMODE = "RESIZING";
 const sketch =
 
   (p5) => {  // remove const sketch 
@@ -7137,7 +7139,6 @@ const sketch =
                 //p5.fill(fillColors[idx]);
                 //p5.rect(...center.xy, this.pixelUnit, this.pixelUnit)
                 let color = this.colorByIndex(i);
-                p5.print("COLOR:", color);
                 p5.push();
 
                 p5.fill(color);
@@ -8525,7 +8526,7 @@ const sketch =
       if (!validOption(initialConfig, "undobutton", [true, false])) initialConfig.undobutton = true;
       if (!validOption(initialConfig, "interactive", [true, false])) initialConfig.interactive = true;
       if (initialConfig.undobuttonlocation == undefined) {
-        initialConfig.undobuttonlocation = canvasBuffer.rF.P(0.02, 0.13).xy
+        initialConfig.undobuttonlocation = canvasBuffer.rF.P(0.02, 0.08).xy
       } else {
         let [x, y] = initialConfig.undobuttonlocation;
         initialConfig.undobuttonlocation = canvasBuffer.rF.P(x, y).xy;
@@ -8559,8 +8560,8 @@ const sketch =
         AppState["REDOBUTTONLOCATION"] = initialConfig.redobuttonlocation;
         AppState["DESCBUTTON"] = true;
         AppState["DESCBUTTONLOCATION"] = canvasBuffer.rF.P(0.02, 0.03).xy;
-        AppState["CUTBUTTON"] = true;
-        AppState["CUTBUTTONLOCATION"] = canvasBuffer.rF.P(0.02, 0.08).xy;
+        AppState["CUTBUTTON"] = APPMODE == "CUTTING";
+        AppState["CUTBUTTONLOCATION"] = canvasBuffer.rF.P(0.02, 0.13).xy;
         AppState["CUTLIMIT"] = initialConfig.cutlimit;
         AppState["UNDOTREE"] = { STEPS: [], INDEX: -1 };
         AppState["INTERACTIVE"] = initialConfig.interactive;
@@ -8755,7 +8756,6 @@ const sketch =
 
       if (AppState.SHOWDESC) {
         p5.push();
-        p5.print("WHAT!")
         p5.stroke("#CCC");
         p5.fill("#FFF");
         let tiles = Tiles.allTiles.filter(it => it.isActive)[0];
@@ -8888,8 +8888,8 @@ const sketch =
         strokePattern(DASHED)
         p5.line(...AppState["CUTSTART"].xy, ...endPoint.xy);
         //p5.print(lineLocationDirection(AppState["CUTSTART"],endPoint))
-        p5.fill("#595");
-        p5.circle(...vmult(vadd(AppState["CUTSTART"], endPoint), 0.5).xy, 10);
+        // p5.fill("#595");
+        // p5.circle(...vmult(vadd(AppState["CUTSTART"], endPoint), 0.5).xy, 10);
         p5.pop();
         let cutTile = Moveable.allMoveables.filter(m => m.isCut);
 
@@ -8897,16 +8897,16 @@ const sketch =
         let vec2Edge = undefined;
         let vec2EdgeNorm = undefined;
         let proj = undefined;
-        if ((cutTile != undefined) && (cutTile.length > 0)) {
-          cutTile[0].edgePoints.map(p => cutTile[0].step2Vert()(p))
-            .forEach((p) => {
-              p5.circle(...p.xy, 4);
-              vec2Edge = vsub(p, AppState["CUTSTART"]);
-              proj = vadd(AppState["CUTSTART"], vmult(cutLineVec, vdot(cutLineVec, vec2Edge)))
-              p5.circle(...proj.xy, 5);
-              //p5.circle(...p.xy,10);
-            })//filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
-        }
+        // if ((cutTile != undefined) && (cutTile.length > 0)) {
+        //   cutTile[0].edgePoints.map(p => cutTile[0].step2Vert()(p))
+        //     .forEach((p) => {
+        //       p5.circle(...p.xy, 4);
+        //       vec2Edge = vsub(p, AppState["CUTSTART"]);
+        //       proj = vadd(AppState["CUTSTART"], vmult(cutLineVec, vdot(cutLineVec, vec2Edge)))
+        //       p5.circle(...proj.xy, 5);
+        //       //p5.circle(...p.xy,10);
+        //     })//filter(it => !any(m.stepVerts.map(v => ((v[0] - it[0]) == 0) && ((v[1] - it[1]) == 0))));//.filter(point => !this.stepVerts.includes(point));
+        // }
         p5.pop();
       }
       // print(p5Inst.mouseVec())

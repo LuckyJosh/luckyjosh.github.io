@@ -1,6 +1,9 @@
 require = function(arg) { return p5 }
 let ISLOCAL = true
-
+let PARAMS = new URLSearchParams(window.location.toString().split('?')[1])
+let NUMROWS = parseInt(PARAMS.get("rows"));
+let NUMCOLS = parseInt(PARAMS.get("cols"));
+let NUMCUTS = parseInt(PARAMS.get("cuts"));
 
 let CONFIGURATIONS = {
   RESIZING: {
@@ -11,7 +14,6 @@ let CONFIGURATIONS = {
     // "undobuttonlocation": [0.25, 0.05],
     // "interactive": false,
     "id": 1,
-    "cutlimit": 5,
 
     "tiles": [
       // {
@@ -39,26 +41,30 @@ let CONFIGURATIONS = {
       //   "resizable": true
       // },
       {
-        "location": [0.04, 0.275],
-        "steps": [5, 5, -5],
+        "location": [0.04, 0.375 + ((NUMROWS > 5) ? 0.05 * (NUMROWS - 5) : 0)],
+        "steps": [NUMCOLS, NUMROWS, -NUMCOLS],
         "startdirection": "x",
         "unit": [0.025, 1, "cm"],
         "empty": false,
         "edgelabels": false,
+        "edgecolor": "#FFF",
         "frozen": true,
         "showresizeeq": false,
         "showsizedesc": true,
         "cuttable": false,
+        "starterfillcolor": "#99112211",
         "fillcolor": "#99112211",
         "resizable": false,
       },
       {
-        "location": [0.04, 0.275],
-        "steps": [5, 5, -5],
+        "location": [0.04, 0.375 + ((NUMROWS > 5) ? 0.05 * (NUMROWS - 5) : 0)],
+
+        "steps": [NUMCOLS, NUMROWS, -NUMCOLS],
         "startdirection": "x",
         "unit": [0.025, 1, "cm"],
         "empty": false,
         "edgelabels": false,
+        "edgecolor": "#FFF",
         "frozen": true,
         "resizable": "ES",
         "showresizeeq": false,
@@ -300,7 +306,7 @@ let CONFIGURATIONS = {
     // "undobuttonlocation": [0.25, 0.05],
     // "interactive": false,
     "id": 1,
-    "cutlimit": 5,
+    "cutlimit": NUMCUTS,
 
     "tiles": [
       // {
@@ -328,8 +334,8 @@ let CONFIGURATIONS = {
       //   "resizable": true
       // },
       {
-        "location": [0.2, 0.5],
-        "steps": [5, 5, -5],
+        "location": [0.04, 0.375 + ((NUMROWS > 5) ? 0.05 * (NUMROWS - 5) : 0)],
+        "steps": [NUMCOLS, NUMROWS, -NUMCOLS],
         "startdirection": "x",
         "unit": [0.025, 1, "cm"],
         "empty": false,
