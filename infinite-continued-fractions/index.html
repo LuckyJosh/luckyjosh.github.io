@@ -1,0 +1,276 @@
+<!DOCTYPE HTML>
+  
+<html>
+
+<head>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+    <script>
+    let element;
+
+    let subdigits = ["₀","₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"];
+
+    let supdigits = ["⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹"];
+    
+
+    function toSubOrSup(digits, number){
+      if (!Number.isInteger(number)) throw new Error(`Number has to be an integer, given number: ${number}`)
+      let num = [...(number).toString()].map(it => digits[parseInt(it)]).join("");
+
+      return num
+      // number.toString().map(it => )
+
+    }
+    
+    function exp(expstring){
+      if (!expstring.includes("e")) throw new Error("Has to be in exponetial form");
+
+      idx = expstring.search("e")      
+      mantissa = expstring.slice(0,idx)
+      exponent = expstring.slice(idx+1)
+      if (exponent==undefined) exponent = "0";
+      
+      return mantissa+"·10"+sup(parseInt(exponent))
+    }
+
+     function sub(number){
+      return ((number < 0)? "₋" : "") + toSubOrSup(subdigits, number)
+    } 
+
+     function sup(number){
+      return ((number < 0)? "⁻" : "") + toSubOrSup(supdigits, number)
+    } 
+
+
+    let lowerXlim, upperXlim;
+    let data = [];
+    let convergentDistances = [];
+
+    function showDistances(){
+      return document.getElementById("show-distances").checked
+    }
+
+    function onselectPresets(event){
+      inputSequence = document.getElementById("sequence_a");
+      inputSequence.value = event.target.value;
+    }
+    
+    const numerator = "p";
+    const denominator= "q";
+    
+    function parseSequenceInput(){
+      let inputSequence = document.getElementById("sequence_a");
+      let isPeriodic = inputSequence.value.endsWith('...');
+      let sequence = inputSequence.value.split(",").map(it => parseInt(it)).filter(it => !isNaN(it))
+      if (isPeriodic){
+        
+        return (i) =>{
+          let period = sequence.length;
+          return sequence[i % period]
+        }
+      }
+
+      return (i) => sequence[i]
+    }
+
+    function recursiveSequence(seq, index){
+    let a = parseSequenceInput()
+      if (index < -2) throw new Error("Index has to be >-3!");
+
+      if (seq == numerator){
+        switch(index){
+          case -2:
+            return 0
+          break;
+          case -1:
+            return 1
+          break;
+          default :
+            return recursiveSequence(seq, index-1)*a(index) + recursiveSequence(seq, index-2)
+          break;
+        } 
+        
+      }else if(seq == denominator){
+        switch(index){
+          case -2:
+            return 1
+          break;
+          case -1:
+            return 0
+          break;
+          default :
+            return recursiveSequence(seq, index-1)*a(index) + recursiveSequence(seq, index-2)
+          break;
+        } 
+
+      }else{
+        throw new Error(`Parameter 'seq' has to be one of {${numerator},${denominator}}, but ${seq} was given!`)
+      }
+    }
+
+
+    function sequenceConvergentsUpto(maxi){
+    let convergents = [];
+    let convergents_fraction = [];
+      for (let i = 0; i <= maxi; i++ ){
+    sequenceNumerator = recursiveSequence(numerator, i);
+    sequenceDenominator = recursiveSequence(denominator, i);
+    // console.log(sequenceNumerator)
+    // console.log(sequenceDenominator)
+
+    convergents.push(sequenceNumerator/sequenceDenominator)
+    convergents_fraction.push([sequenceNumerator, sequenceDenominator])
+      }
+      return {values:convergents, fractions:convergents_fraction}
+
+    }
+    
+    </script>
+
+
+
+</head>
+
+<body>
+  <label for="preset-sequence"> Beispielfolgen (a_0, a_1, a_2, ...):     </label>
+  <select id="preset-sequence" name="Folge-a" onchange="onselectPresets(event)" >
+  <option value="1,1,1,1,..." selected="selected">1,1,1,1,...</option>
+  <option value="1,2,1,2,...">1,2,1,2,...</option>
+  <option value="2,2,2,2,...">2,2,2,2,...</option>
+  <option value="2,1,2,1,...">2,1,2,1,...</option>
+  </select> <br>
+    <label for="sequence_a">Ausgewählte Folge (a_0, a_1, a_2, ...):</label>
+    <input type="text" id="sequence_a">
+    <button onclick="plotNew()">Plot</button><br>
+    <label>Abstände anzeigen:</label>
+    <input type="checkbox" id="show-distances">
+
+   
+
+    <div id="plot" style="margin-top:5vh"> </div>
+</body>
+    
+  <script>
+
+    let inputSequence = document.getElementById("sequence_a");
+    inputSequence.value = "1,1,1,1,..."
+
+      
+      element = document.getElementById('plot');
+  function plot(){
+      let n = 20;
+      
+      let convergents = sequenceConvergentsUpto(n);
+      convergentDistances = []
+      
+      distance_plots = [];
+      if (showDistances()){
+      [...Array(n).keys()].forEach(it => {
+          let yshift = 0.09-0.004*it
+          let distance = Math.abs(convergents.values[it+1] - convergents.values[it]);
+          convergentDistances.push({traceids:[it + 1 + (it), it + 2 + (it)] , dist:distance})
+          if((upperXlim == undefined)||(lowerXlim == undefined)){
+              lowerXlim = convergents.values[0];
+              upperXlim = convergents.values[1];
+          } 
+
+
+          distance_plots.push({
+           x:[convergents.values[it],convergents.values[it+1]],
+           y:(it%2 == 0)? [-yshift,-yshift]:[yshift, yshift ],
+
+          mode:'markers+lines',
+          visible:showDistances()&&([0,1].includes(it)),
+          text:"",//`|r_${it+1} - r_${it}| = ${distance.toExponential(4)}`,
+          marker:{size:12,
+            symbol: (it%2 == 0)? "triangle-up" : "triangle-down"
+          },
+          
+
+          })
+
+          distance_plots.push({
+           x:[(convergents.values[it]+convergents.values[it+1])/2],
+           y:(it%2 == 0)? [-yshift-0.005] :[yshift+0.005],
+          mode:'text',
+          visible:showDistances()&&([0,1].includes(it)),
+          text:`|r${sub(it+1)} - r${sub(it)}| = ${exp(distance.toExponential(4))}`,
+          })
+        } ) 
+      }
+   data =  [{
+	x: convergents.values,
+	y: convergents.values.map(it => 0),
+  visible: true,
+  type:'scatter',
+  textposition: "bottom",
+  mode:'markers+text',
+        text:convergents.fractions.map((it,i) => `r${sub(i)} = ${sup(it[0])}/${sub(it[1])}` ),
+  marker:{size:16,
+          color:convergents.values.map((it,i) => i),
+colorscale: 'Electric',
+      },
+  
+      },
+        
+    ...distance_plots
+
+    ]
+}
+    
+    function plotNew(){
+      console.log(element);
+      plot();
+	Plotly.newPlot( element, data, 
+  {
+  	margin: { t: 0,},
+    yaxis:{
+            fixedrange:true,
+            nticks: 0,
+            range:[-0.1, 0.1]
+          },
+    showlegend:false,
+
+    font: {
+    size: 16,
+
+  }
+    
+  }
+
+  );
+  
+    function updateFunc(eventdata){
+      console.log(eventdata)
+    if (showDistances()){
+    let [lowerXlim, upperXlim] = [eventdata['xaxis.range[0]'], eventdata['xaxis.range[1]']];
+    let distance = upperXlim - lowerXlim;
+        if (isNaN(distance)){
+
+        let convergents = sequenceConvergentsUpto(20);
+        distance = (convergents.values[1] - convergents.values[0])*1.5;
+    }
+    console.log(distance)
+    //console.log(lowerXlim, upperXlim)
+    let visibleids = convergentDistances.filter(it => (it.dist > 0.075*distance) && (it.dist < distance)).flatMap(it => it.traceids);
+
+        Plotly.update(element, {'visible':false}, {}, [...Array(41).keys()].slice(1,41))
+        Plotly.update(element, {'visible':true}, {}, visibleids)
+        }
+
+  
+}
+
+    element.on('plotly_relayout', updateFunc);
+    element.on('plotly_reset', updateFunc);
+
+
+
+
+    }
+    
+  plotNew();
+  
+
+    </script>
+
+</html>
