@@ -1,12 +1,49 @@
+<!-- 
+@TODO: more example sequences
+@TODO: remove polty buttons except zoom,reset and png
+-->
+
 <!DOCTYPE HTML>
   
 <html>
 
 <head>
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
-    <script>
-    let element;
+    <script src="all.min.js" charset="utf-8"></script>
+    <style>
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
+            
+        }
 
+        .container {
+            width: 97.5vw;
+            height: 60px;
+            margin: 10px;
+        }
+
+        .item {
+            width: 18vw;
+            height: 80px;
+            background-color: white;
+            float: left;
+            margin-right: 10px;
+            font-size:18px;
+        }
+        .center {
+            margin: 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            -ms-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+        }
+    </style>
+    <script>
+
+    //Faux-Math formatting
     let subdigits = ["₀","₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"];
 
     let supdigits = ["⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹"];
@@ -40,9 +77,81 @@
       return ((number < 0)? "⁻" : "") + toSubOrSup(supdigits, number)
     } 
 
+    function symToText(sym){
+        if (typeof sym == "string") return sym;
+        return sym.text()
+    }
+    function symToTex(sym){
+        if (typeof sym == "string") return sym;
+        return sym.latex()
+    }
+    
+    function sqrtTextSymbol(sym){
+     text = symToText(sym);
+     text = text.replace("sqrt","√")
+     text = text.replace("sqrt","√")
+     return text
+    }
+
+    function sqrtSymbol(sym){
+     text = symToTex(sym);
+     return text.replace("\\sqrt{","√(").replace("}", ")") 
+    }
+    // \\\\frac\{(?<num>[0-9()√]*)\}\{(?<denom>[0-9()√]*)\}
+    function fracSymbol(sym){
+      tex = symToTex(sym);
+      let regex = RegExp("\\\\frac\\{(?<num>[0-9()√\\\\cdot\\s]*)\\}\\{(?<denom>[0-9()√]*)\\}", "gmu");
+      let matches = []
+      let match;
+      while ((match = regex.exec(tex)) !== null) {
+        matches.push({match:match[0], groups:match.groups})
+      }
+
+      let cdotregex = RegExp("(?<scale>\\d*)\\s\\\\cdot\\s(?<root>[√0-9()].*)")
+      matches.forEach(match => {
+        let root = ""
+        if (match.groups.num.includes("cdot")){
+          match = cdotregex.exec(match.groups.num);
+          root = "·" + match.groups.root;
+          match.groups.num = match.groups.scale;
+        }else if(match.groups.num.includes("√")) {
+          root = "·" + match.groups.num;
+          match.groups.num = "1";
+        }
+
+        tex = tex.replace(match.match, ` ${sup(parseInt(match.groups.num))}/${sub(parseInt(match.groups.denom))}${root} `)
+      })
+      return tex
+    }    
+
+    function sqrtMath(sym){
+     text = symToText(sym);
+     return text.replace("sqrt","Math.sqrt") 
+    }
+    
+    function evalSymbolic(sym){
+      text = symToText(sym);
+      replaced = sqrtMath(text);
+      return eval(replaced)
+    }
+    
+
+    let minus2 = "z";
+    let minus1 = "e";
+    function fixNegativeIndices(expr){
+        expr.replaceAll(minus1, "-1").replaceAll(minus2, "-2")
+    }
+
+
+
+    let element;
+    let updatedSequence = false ;
+    let parsedInputSequence = null;
+    let numberConvergents = 20;
 
     let lowerXlim, upperXlim;
     let data = [];
+    let convergents = [];
     let convergentDistances = [];
 
     function showDistances(){
@@ -52,28 +161,77 @@
     function onselectPresets(event){
       inputSequence = document.getElementById("sequence_a");
       inputSequence.value = event.target.value;
+      updatedSequence = true;
+    }
+    function oninputSequence(event){
+      updatedSequence = true;
     }
     
     const numerator = "p";
     const denominator= "q";
     
     function parseSequenceInput(){
-      let inputSequence = document.getElementById("sequence_a");
-      let isPeriodic = inputSequence.value.endsWith('...');
-      let sequence = inputSequence.value.split(",").map(it => parseInt(it)).filter(it => !isNaN(it))
-      if (isPeriodic){
+
         
-        return (i) =>{
-          let period = sequence.length;
-          return sequence[i % period]
-        }
+
+      let seq_a = inputSequence.value;
+      let isPeriodic = seq_a.endsWith('...');
+      if (isPeriodic) seq_a= seq_a.slice(0,-4);
+
+      let sequence = seq_a.split(",").map(it => parseInt(it))
+      
+      function getPrefix(){
+        return this.slice(0,this.prefixLength)
+      }
+      function getPeriod(){
+        return this.slice(this.prefixLength, this.prefixLength+this.periodLength)
       }
 
-      return (i) => sequence[i]
+
+
+      if (isPeriodic){
+        // test for period length
+        let periodLength = 0;
+        let checkedEquality, allEqual;
+        let revSequence = [...sequence].reverse();
+        [...Array(Math.floor(sequence.length/2)).keys()].forEach((i) => {
+            
+          idx = i + 1;
+          console.log(`${idx}`)
+          checkedEquality = [...Array(idx).keys()].map(j => { 
+            console.log(`Length ${idx}, Checking ${j}⇒[${revSequence[j]}] and ${j+idx}⇒[${revSequence[j+idx]}],`)
+            return (revSequence[j] == revSequence[j+idx])
+          }).map(it => it*1).reduce((r,c) => r*c);
+            allEqual =  !!checkedEquality;
+            if (allEqual) periodLength = idx;
+            console.log(`check result ${checkedEquality}, i is period ${allEqual}`)
+          
+          })
+  
+      let prePeriod = sequence.slice(0,-2*periodLength);
+      let period = sequence.slice(-2*periodLength);
+      console.log(prePeriod, period);
+      let newSequence = prePeriod.concat(
+          [...Array(numberConvergents+5).keys()].map((i) =>{
+          return period[i % periodLength]
+        }));
+      newSequence.periodLength = periodLength;
+      newSequence.prefixLength = sequence.length - 2*periodLength;
+      newSequence.getPrefix = getPrefix;
+      newSequence.getPeriod = getPeriod;
+      return newSequence
+      }
+      
+      sequence.periodLength = 0;
+      sequence.prefixLength = sequence.length;
+      sequence.getPrefix = getPrefix;
+      sequence.getPeriod = getPeriod;
+      return sequence
     }
 
     function recursiveSequence(seq, index){
-    let a = parseSequenceInput()
+      let a = parsedInputSequence;
+
       if (index < -2) throw new Error("Index has to be >-3!");
 
       if (seq == numerator){
@@ -85,7 +243,7 @@
             return 1
           break;
           default :
-            return recursiveSequence(seq, index-1)*a(index) + recursiveSequence(seq, index-2)
+            return recursiveSequence(seq, index-1)*a[index] + recursiveSequence(seq, index-2)
           break;
         } 
         
@@ -98,13 +256,87 @@
             return 0
           break;
           default :
-            return recursiveSequence(seq, index-1)*a(index) + recursiveSequence(seq, index-2)
+            return recursiveSequence(seq, index-1)*a[index] + recursiveSequence(seq, index-2)
           break;
         } 
 
       }else{
         throw new Error(`Parameter 'seq' has to be one of {${numerator},${denominator}}, but ${seq} was given!`)
       }
+    }
+
+    function recursiveSequenceFormula(seq, index){
+      let startingValues = {numerator: ["0", "1"], denominator: ["1","0"]};
+    let value;
+
+      if (index >= 0){
+        prevIndex = index - 1 ;
+        prevprevIndex = index - 2;
+        
+        if (prevIndex == -1) prevIndex = minus1;
+        if (prevprevIndex == -1) prevprevIndex = minus1;
+        if (prevprevIndex == -2) prevprevIndex = minus2;
+
+        value = `a_${index} * ${seq}_${prevIndex} + ${seq}_${prevprevIndex}`
+      }
+      else if (index == -2){
+        value = startingValues[seq][0]; 
+      }else if (index == -1){
+        value = startingValues[seq][0]; 
+      };
+       
+      return {lhs:`${seq}_${index}`, rhs:value}
+    }
+
+    function isSymbolic(obj){
+      return "toTeX" in obj
+    }
+
+    function  displayEquation(eq){
+      if(!("lhs" in eq) || !("rhs" in eq)) throw new Error("An Equation has to have a 'lhs' and 'rhs', given eq:", eq);
+      
+      if (isSymbolic(eq) ){
+        return `${eq.lhs.toTeX()} = ${eq.rhs.toTeX()}`
+      }
+
+      return `${eq.lhs} = ${eq.rhs}`
+
+    }
+
+    //return [...(Array(index).keys())].reverse().map((it,i) => nerdamer(`(${numSeq[it][1]})/(${denomSeq[it][1]})`))
+    function convergentSymbolic(index){
+      numSeq = recursiveSequenceFormula(numerator, index);
+      denomSeq = recursiveSequenceFormula(denominator, index);
+      // console.log(numSeq, denomSeq)
+      // console.log({lhs:(`(${numSeq.lhs})/(${denomSeq.lhs})`),rhs:(`(${numSeq.rhs})/(${denomSeq.rhs})`)})
+      return {lhs:nerdamer(`(${numSeq.lhs})/(${denomSeq.lhs})`),rhs:nerdamer(`(${numSeq.rhs})/(${denomSeq.rhs})`)}
+    }
+    
+
+    function sequenceConvergentsSymbolicUpto(index){
+      let convs = [...Array(index).keys()].map(it => convergentSymbolic(it)).toReversed();
+      let lastConvergent = convs[0];
+      let lastRHS = []
+      convs.forEach((conv, i) => {
+
+        //console.log(`Index ${index - 1 - i}`);
+        lastrhs = conv.rhs;
+        convs.slice(i).forEach(it => {
+          //console.log("|lhs|", it.lhs.toString(), "|rhs|", it.rhs.toString());
+          lastrhs = lastrhs.sub(it.lhs.numerator(), it.rhs.numerator()).simplify();
+          //console.log("num->", lastrhs.toString());
+          lastrhs = lastrhs.sub(it.lhs.denominator(), it.rhs.denominator()).simplify();
+          //console.log("denom->", lastrhs.toString());
+        })
+
+        lastrhs = lastrhs.sub("p_e", "1").simplify();
+        lastrhs = lastrhs.sub("p_z", "0").simplify();
+        lastrhs = lastrhs.sub("q_e", "0").simplify();
+        lastrhs = lastrhs.sub("q_z", "1").simplify();
+        lastRHS.push(lastrhs);
+
+      })
+      return lastRHS
     }
 
 
@@ -120,9 +352,69 @@
     convergents.push(sequenceNumerator/sequenceDenominator)
     convergents_fraction.push([sequenceNumerator, sequenceDenominator])
       }
+
       return {values:convergents, fractions:convergents_fraction}
 
     }
+    
+    let equationInfo = {}
+    function solveContfracWithoutPrefix(period){
+        let rhs = sequenceConvergentsSymbolicUpto(period.length + 1)[0];
+        //console.log("rhs", rhs.text(), rhs.variables())
+        let vars = rhs.variables().slice(0,-1)
+        rhs = rhs.sub(`a_${period.length}`, "x");
+        //console.log("rhs", rhs.text())
+        vars.forEach((v, i) => rhs = rhs.sub(v, period[i]));
+        //console.log("rhs", rhs.text())
+        // console.log("Equation to solve:", nerdamer.simplify(rhs + '-x').text());
+        // console.log("Equation to solve:", nerdamer.simplify(rhs + '-x').numerator().text());
+        // console.log("Equation to solve:", nerdamer.solve(nerdamer.simplify(rhs + '-x').numerator(),"x").latex());
+        // console.log(nerdamer.solve(nerdamer.simplify(rhs + '-x').numerator(), "x").symbol.elements[1]);
+        equationInfo["periodicSolution"] = nerdamer.simplify(rhs + '-x').numerator();
+        let contfracSolution = nerdamer.solve(nerdamer.simplify(rhs + '-x').numerator(), "x").symbol.elements[1];
+        equationInfo["periodicSolutionValue"] = contfracSolution;
+        return contfracSolution
+    }
+    
+    let contfracSolution;
+    function solveContfracSymbolic(force){
+       
+      if (contfracSolution && (force != true)) return contfracSolution;
+      let prefix = parsedInputSequence.getPrefix();
+      let period = parsedInputSequence.getPeriod();
+      
+      if (prefix.length == 0){
+          contfracSolution = solveContfracWithoutPrefix(period);
+          return contfracSolution
+
+      }else{
+        let periodicSolution = solveContfracWithoutPrefix(period);
+        console.log("periodicSolution",periodicSolution.latex());
+        let sqrtRegex = RegExp(".*(?<root>sqrt\\([0-9]*\\)).*", "gm");
+        let root = sqrtRegex.exec(periodicSolution.text()).groups.root;
+        // console.log("root",periodicSolution.text(),root);
+
+        let rhs = sequenceConvergentsSymbolicUpto(prefix.length + 1)[0];
+        let vars = rhs.variables().slice(0,-1)
+        vars.forEach((v, i) => rhs = rhs.sub(v, prefix[i]));
+        equationInfo["solution"] = rhs.sub(`a_${prefix.length}`,"x"); 
+        rhs = rhs.sub(`a_${prefix.length}`, periodicSolution);
+
+        let conjugate = rhs.denominator().sub(root, "-"+root);
+        let newDenom = rhs.denominator().multiply(conjugate).expand();
+        let newNum = rhs.numerator().multiply(conjugate).expand();
+        contfracSolution = newNum.divide(newDenom).expand();
+        // console.log("rhs",((rhs.numerator().multiply(conjugate))).expand().latex())
+
+        //
+        return contfracSolution
+      } 
+    }
+
+    function contfracLimit(force){
+      return evalSymbolic(solveContfracSymbolic(force))
+    }
+
     
     </script>
 
@@ -131,40 +423,75 @@
 </head>
 
 <body>
-  <label for="preset-sequence"> Beispielfolgen (a_0, a_1, a_2, ...):     </label>
+  <h1>Die Konvergenten von Kettenbrüchen</h1>
+  <div class="container">
+  <div class="item">
+  <label for="preset-sequence"> Beispielfolgen (a₀, a₁, a₂, ...):     </label><br>
+  <label for="sequence_a">Ausgewählte Folge (a₀, a₁, a₂, ...):</label>
+
+  <label>Abstände anzeigen:</label>
+
+  </div>
+  <div class="item">
   <select id="preset-sequence" name="Folge-a" onchange="onselectPresets(event)" >
   <option value="1,1,1,1,..." selected="selected">1,1,1,1,...</option>
   <option value="1,2,1,2,...">1,2,1,2,...</option>
   <option value="2,2,2,2,...">2,2,2,2,...</option>
   <option value="2,1,2,1,...">2,1,2,1,...</option>
   </select> <br>
-    <label for="sequence_a">Ausgewählte Folge (a_0, a_1, a_2, ...):</label>
-    <input type="text" id="sequence_a">
-    <button onclick="plotNew()">Plot</button><br>
-    <label>Abstände anzeigen:</label>
-    <input type="checkbox" id="show-distances">
+    <input type="text" id="sequence_a" oninput="oninputSequence(event)"><br>
+    <input type="checkbox" id="show-distances" style="margin:0px">
 
-   
-
+  </div>
+  <div class="item">
+    <br>
+    <button onclick="plotNew()" style="font-size:18px">    Plot    </button><br>
+  </div>
+  <div class="item" id="equations" style="font-size:12px">
+  
+  </div>
+  <!-- <div class="item"> -->
+  <!--     Wert des Kettenbruchs: -->
+  <!--   </div>  -->
+</div>
     <div id="plot" style="margin-top:5vh"> </div>
 </body>
     
   <script>
 
     let inputSequence = document.getElementById("sequence_a");
-    inputSequence.value = "1,1,1,1,..."
+    let presetSequence = document.getElementById("preset-sequence");
+    inputSequence.value = presetSequence.value;
+    parsedInputSequence = parseSequenceInput();
+
+    element = document.getElementById('plot');
+
+  function plot(){
+      
+    if ((convergents.length == 0) || updatedSequence){
+      equationInfo = {};
+      parsedInputSequence = parseSequenceInput();
+      convergents = sequenceConvergentsUpto(numberConvergents)
+      contfraclimit = contfracLimit(true);
+      console.log("Contfrac Limit:", contfraclimit);
+      updatedSequence = false;
+      console.log("eqInfo:", equationInfo);
+      eqdiv = document.getElementById("equations");
+      let periodText= `Gleichung aus Periode:  
+                       ${equationInfo.periodicSolution.text().replace("^2", sup(2))} = 0<br> 
+⇒ x = ${sqrtTextSymbol(equationInfo["periodicSolutionValue"])}`
+      let prefixText = ""
+      if (equationInfo.solution) prefixText = `mit Präfix ⇒ θ = ${sqrtTextSymbol(equationInfo.solution.text())}`;
+      eqdiv.innerHTML = ` ${periodText} <br> ${prefixText}`;
 
       
-      element = document.getElementById('plot');
-  function plot(){
-      let n = 20;
+    }
       
-      let convergents = sequenceConvergentsUpto(n);
       convergentDistances = []
       
       distance_plots = [];
       if (showDistances()){
-      [...Array(n).keys()].forEach(it => {
+      [...Array(numberConvergents).keys()].forEach(it => {
           let yshift = 0.09-0.004*it
           let distance = Math.abs(convergents.values[it+1] - convergents.values[it]);
           convergentDistances.push({traceids:[it + 1 + (it), it + 2 + (it)] , dist:distance})
@@ -197,22 +524,60 @@
           })
         } ) 
       }
-   data =  [{
-	x: convergents.values,
-	y: convergents.values.map(it => 0),
-  visible: true,
-  type:'scatter',
-  textposition: "bottom",
-  mode:'markers+text',
+
+      let convergentsPlot = {
+        x: convergents.values,
+        y: convergents.values.map(it => 0),
+        visible: true,
+        type:'scatter',
+        textposition: "bottom",
+        mode:'markers+text',
         text:convergents.fractions.map((it,i) => `r${sub(i)} = ${sup(it[0])}/${sub(it[1])}` ),
-  marker:{size:16,
+        marker:{
+          size:16,
           color:convergents.values.map((it,i) => i),
-colorscale: 'Electric',
+          colorscale: 'Electric',
+        }
+      }
+      
+      let limitPlot = [{
+        x: [contfraclimit,contfraclimit],
+        y: [-0.05, 0.05],
+        visible: true,
+        type:'scatter',
+        mode:'lines',
+        textposition:"center",
+        line:{color:'#1f77b4'},
+        marker:{
+          size:30,
+        },
+        textfont: {
+          size: 18,
+          color: '#1f77b4',
+          bgcolor: '#1f77b4'
+        },
       },
+        {
+        x: [contfraclimit],
+        y: [0.06],
+        visible: true,
+        type:'scatter',
+        mode:'lines+text',
+        text: fracSymbol(sqrtSymbol(solveContfracSymbolic().latex())) + " ≈ " + evalSymbolic(solveContfracSymbolic()).toFixed(9),
+        textposition:"center",
+        marker:{
+          size:30,
+        },
+        textfont: {
+          size: 18,
+          color: '#1f77b4',
+        },
+      }]
   
-      },
-        
-    ...distance_plots
+   data =  [
+      convergentsPlot,
+    ...distance_plots,
+      ...limitPlot
 
     ]
 }
@@ -246,7 +611,7 @@ colorscale: 'Electric',
     let distance = upperXlim - lowerXlim;
         if (isNaN(distance)){
 
-        let convergents = sequenceConvergentsUpto(20);
+        
         distance = (convergents.values[1] - convergents.values[0])*1.5;
     }
     console.log(distance)
