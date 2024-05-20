@@ -4,7 +4,7 @@
 -->
 
 <!DOCTYPE HTML>
-  
+<meta charset="UTF-8">
 <html>
 
 <head>
@@ -20,14 +20,30 @@
 
         .container {
             width: 97.5vw;
-            height: 60px;
+            height: 80px;
             margin: 10px;
         }
 
         .item {
-            width: 18vw;
+            width: 30vw;
             height: 80px;
-            background-color: white;
+            background-color: rgb(253,253,253);
+            float: left;
+            margin-right: 10px;
+            font-size:18px;
+        }
+        .itemS {
+            width: 20vw;
+            height: 80px;
+            background-color: rgb(253,253,253);
+            float: left;
+            margin-right: 10px;
+            font-size:18px;
+        }
+        .itemL {
+            width: 100vw;
+            height: 80px;
+            background-color: rgb(253,253,253);
             float: left;
             margin-right: 10px;
             font-size:18px;
@@ -176,6 +192,11 @@
 
       let seq_a = inputSequence.value;
       let isPeriodic = seq_a.endsWith('...');
+      //@HACK: nonperiodic do not work anymore
+      if  (!isPeriodic) {
+        seq_a = seq_a + ",...";
+        isPeriodic = true
+      };
       if (isPeriodic) seq_a= seq_a.slice(0,-4);
 
       let sequence = seq_a.split(",").map(it => parseInt(it))
@@ -197,20 +218,20 @@
         [...Array(Math.floor(sequence.length/2)).keys()].forEach((i) => {
             
           idx = i + 1;
-          console.log(`${idx}`)
+          //console.log(`${idx}`)
           checkedEquality = [...Array(idx).keys()].map(j => { 
-            console.log(`Length ${idx}, Checking ${j}⇒[${revSequence[j]}] and ${j+idx}⇒[${revSequence[j+idx]}],`)
+            //console.log(`Length ${idx}, Checking ${j}⇒[${revSequence[j]}] and ${j+idx}⇒[${revSequence[j+idx]}],`)
             return (revSequence[j] == revSequence[j+idx])
           }).map(it => it*1).reduce((r,c) => r*c);
             allEqual =  !!checkedEquality;
             if (allEqual) periodLength = idx;
-            console.log(`check result ${checkedEquality}, i is period ${allEqual}`)
+            //console.log(`check result ${checkedEquality}, i is period ${allEqual}`)
           
           })
   
       let prePeriod = sequence.slice(0,-2*periodLength);
       let period = sequence.slice(-2*periodLength);
-      console.log(prePeriod, period);
+      //console.log(prePeriod, period);
       let newSequence = prePeriod.concat(
           [...Array(numberConvergents+5).keys()].map((i) =>{
           return period[i % periodLength]
@@ -389,7 +410,7 @@
 
       }else{
         let periodicSolution = solveContfracWithoutPrefix(period);
-        console.log("periodicSolution",periodicSolution.latex());
+        //console.log("periodicSolution",periodicSolution.latex());
         let sqrtRegex = RegExp(".*(?<root>sqrt\\([0-9]*\\)).*", "gm");
         let root = sqrtRegex.exec(periodicSolution.text()).groups.root;
         // console.log("root",periodicSolution.text(),root);
@@ -423,38 +444,39 @@
 </head>
 
 <body>
-  <h1>Die Konvergenten von Kettenbrüchen</h1>
+  <h1>Die Konvergenten von unendlichen Kettenbrüchen</h1>
   <div class="container">
   <div class="item">
   <label for="preset-sequence"> Beispielfolgen (a₀, a₁, a₂, ...):     </label><br>
-  <label for="sequence_a">Ausgewählte Folge (a₀, a₁, a₂, ...):</label>
-
+  <label for="sequence_a">Ausgewählte Folge (a₀, a₁, a₂, ...):</label><br>
   <label>Abstände anzeigen:</label>
 
   </div>
-  <div class="item">
+  <div class="itemS">
   <select id="preset-sequence" name="Folge-a" onchange="onselectPresets(event)" >
   <option value="1,1,1,1,..." selected="selected">1,1,1,1,...</option>
-  <option value="1,2,1,2,...">1,2,1,2,...</option>
+  <option value="2,1,1,1,...">2,1,1,1,...</option>
+  <option value="2,3,1,1,...">2,3,1,1,...</option>
   <option value="2,2,2,2,...">2,2,2,2,...</option>
+  <option value="1,2,1,2,...">1,2,1,2,...</option>
   <option value="2,1,2,1,...">2,1,2,1,...</option>
+  <option value="1,3,1,2,1,2,...">1,3,1,2,1,2,...</option>
   </select> <br>
     <input type="text" id="sequence_a" oninput="oninputSequence(event)"><br>
     <input type="checkbox" id="show-distances" style="margin:0px">
 
   </div>
-  <div class="item">
+  <div class="itemS">
     <br>
     <button onclick="plotNew()" style="font-size:18px">    Plot    </button><br>
-  </div>
-  <div class="item" id="equations" style="font-size:12px">
-  
   </div>
   <!-- <div class="item"> -->
   <!--     Wert des Kettenbruchs: -->
   <!--   </div>  -->
 </div>
-    <div id="plot" style="margin-top:5vh"> </div>
+    <div id="plot" style="margin-top:2vh"> </div>
+
+    <div class="itemL" id="equations" ></div>
 </body>
     
   <script>
@@ -473,15 +495,15 @@
       parsedInputSequence = parseSequenceInput();
       convergents = sequenceConvergentsUpto(numberConvergents)
       contfraclimit = contfracLimit(true);
-      console.log("Contfrac Limit:", contfraclimit);
+      //console.log("Contfrac Limit:", contfraclimit);
       updatedSequence = false;
-      console.log("eqInfo:", equationInfo);
+      //console.log("eqInfo:", equationInfo);
       eqdiv = document.getElementById("equations");
-      let periodText= `Gleichung aus Periode:<br> 
-                       ${equationInfo.periodicSolution.text().replace("^2", sup(2))} = 0<br> 
-⇒ x = ${sqrtTextSymbol(equationInfo["periodicSolutionValue"])}`
+      let periodText= `Gleichung aus Periode: 
+                       ${equationInfo.periodicSolution.text().replaceAll("*","·").replace("^2", sup(2))} = 0<br>  
+⇒ x = ${sqrtTextSymbol(equationInfo["periodicSolutionValue"]).replaceAll("*","·")}`
       let prefixText = ""
-      if (equationInfo.solution) prefixText = `mit Präfix ⇒ θ = ${sqrtTextSymbol(equationInfo.solution.text())}`;
+        if (equationInfo.solution) prefixText = `⇒ ⟨${parsedInputSequence.getPrefix()},x⟩ = ${sqrtTextSymbol(equationInfo.solution.text()).replaceAll("*", "·").replace("^(-1)", sup(-1))}`;
       eqdiv.innerHTML = ` ${periodText} <br> ${prefixText}`;
 
       
@@ -583,7 +605,7 @@
 }
     
     function plotNew(){
-      console.log(element);
+      //console.log(element);
       plot();
 	Plotly.newPlot( element, data, 
   {
@@ -595,10 +617,32 @@
           },
     showlegend:false,
 
-    font: {
-    size: 16,
+          font: { size: 16, },
+    title: {
 
-  }
+            text:`Kettenbruch ⟨a₀,a₁,a₂,...⟩ = ⟨${parsedInputSequence.slice(0,parsedInputSequence.getPrefix().length + 2*parsedInputSequence.getPeriod().length)},...⟩`,
+
+    font: {
+
+
+      size: 24
+
+    },
+    xref:'data',        
+    yref:'data',        
+    x:0.05,
+    y:0.95,
+  },
+  },
+        {
+  toImageButtonOptions: {
+    format: 'jpeg', // one of png, svg, jpeg, webp
+    filename: `continued-fraction`,
+    height: 500,
+    width: 700,
+    scale: 1 // Multiply title/legend/axis/canvas sizes by this factor
+    },
+    modeBarButtonsToRemove: ['select2d', 'lasso2d','autoscale2d']
     
   }
 
