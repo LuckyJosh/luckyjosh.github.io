@@ -1,0 +1,3 @@
+name = "pptx2divomath"
+description = "Convert a pptx file into yaml code for the divomath slides"
+packages = ["python-pptx"]
