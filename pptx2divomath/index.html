@@ -55,16 +55,6 @@ function copyyaml(){
 
   </head>
   <body>
-    <script type="text/javascript">
-      async function main() {
-        console.log("Test");
-        let pyodide = await loadPyodide();
-        await pyodide.loadPackage("micropip");
-        const micropip = pyodide.pyimport("micropip");
-        await micropip.install("pyyaml");
-      }
-      main(); 
-    </script>
   <script type="py" config="./pyscript.toml">
     from pyscript import display
     import datetime
