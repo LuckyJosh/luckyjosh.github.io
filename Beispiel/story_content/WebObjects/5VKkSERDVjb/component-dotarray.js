@@ -1,4 +1,4 @@
-const APPMODE = "4_ES1x1False_ref_3"
+const APPMODE = "3_ES1x1False"
 const isDivomath = false;
 const PIXELUNIT = 36;
 const LOCATIONX = 0;
@@ -85,6 +85,9 @@ const sketch =
       let lastAppState = lastState;
       p5.print("lastAppState:", lastAppState);
       AppState = lastAppState;
+      if (initialConfig.ref != undefined) {
+        AppState["ID"] = -1 * AppState["ID"];
+      }
       // if (isNaN(AppState["NUMCUBES.COMPACT"])) {
       //   AppState["NUMCUBES.COMPACT"] = 0;
       // }
@@ -8658,7 +8661,7 @@ const sketch =
         AppState["CUTLIMIT"] = initialConfig.cutlimit;
         AppState["UNDOTREE"] = { STEPS: [], INDEX: -1 };
         AppState["INTERACTIVE"] = initialConfig.interactive;
-        AppState["ID"] = initialConfig.id;
+        AppState["ID"] = initialConfig.id || `ref:${initialConfig.ref}`;
       }
       if (isResumed) {
         tilesList = AppState["TILES"];
@@ -8746,7 +8749,7 @@ const sketch =
       print(Tiles.serialize())
       p5.frameRate(30);
 
-      if (AppState["ID"] != undefined) {
+      if ((AppState["ID"] != undefined) && !(AppState["ID"] < 0)) {
         let key = `TILES:${AppState["ID"]}`
         let value = p5.getDivomathVarState()
         p5.storeItem(key, value);
@@ -9271,7 +9274,7 @@ const sketch =
 
 
       }
-      if (AppState["ID"] != undefined) {
+      if ((AppState["ID"] != undefined) && !(AppState["ID"] < 0)) {
         let key = `TILES:${AppState["ID"]}`
         let value = p5.getDivomathVarState()
         p5.storeItem(key, value);
@@ -9498,7 +9501,7 @@ const sketch =
       draggingVector = p5.createVector(0, 0);
       p5.print(Tiles.allTiles);
 
-      if (AppState["ID"] != undefined) {
+      if ((AppState["ID"] != undefined) && !(AppState["ID"] < 0)) {
         let key = `TILES:${AppState["ID"]}`
         let value = p5.getDivomathVarState()
         p5.storeItem(key, value);
@@ -9513,7 +9516,7 @@ const sketch =
   };
 
 
-console.log("Timestamp of build: 2024-10-29 16:59:08.161030");
+console.log("Timestamp of build: 2024-10-31 09:43:57.568158");
 
 let myp5 = new p5(sketch, "sketch")
 

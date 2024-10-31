@@ -13,7 +13,7 @@
         <options>
           <option name="title_enabled" value="true">
             <options>
-              <option name="title_text" value="Beispiel" />
+              <option name="title_text" value="Beispiel 4" />
             </options>
           </option>
           <option name="logo_enabled" value="false">
@@ -1555,8 +1555,9 @@
       <links>
         <slidelink slideid="_player.5W3E5Hr1038" displaytext="Szene ohne Titel" expand="true" type="slide">
           <links>
-            <slidelink slideid="_player.5W3E5Hr1038.5w1ejH06Smj" displaytext="Folie ohne Titel" expand="false" type="slide" />
             <slidelink slideid="_player.5W3E5Hr1038.6LRf9pHuaPu" displaytext="Folie ohne Titel" expand="false" type="slide" />
+            <slidelink slideid="_player.5W3E5Hr1038.5iQOfKbDIqM" displaytext="Folie ohne Titel" expand="false" type="slide" />
+            <slidelink slideid="_player.5W3E5Hr1038.6dMf1r8rSkD" displaytext="Folie ohne Titel" expand="false" type="slide" />
           </links>
         </slidelink>
       </links>
