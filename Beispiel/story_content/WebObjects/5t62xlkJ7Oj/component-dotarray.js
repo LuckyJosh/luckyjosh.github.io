@@ -47,7 +47,21 @@ const sketch =
 
       lastState = (Object.keys(initialData.divomathVarState).includes("json")) ? JSON.parse(initialData.divomathVarState.json) : {};
     } else {
-      let stored = localStorage.getItem(`TILES:${initialConfig.id}`);
+      let stored;
+      console.log("Trying to read localStorage...");
+      if (initialConfig.id != undefined) {
+        console.log("... as the last state with key", `TILES:${initialConfig.id}`, '...');
+        stored = localStorage.getItem(`TILES:${initialConfig.id}`);
+        console.log("... got", stored);
+      } else if (initialConfig.ref != undefined) {
+        console.log("... as a reference with key", `TILES:${initialConfig.ref}`, '...');
+        stored = localStorage.getItem(`TILES:${initialConfig.ref}`);
+        console.log("... got", stored);
+      } else {
+        console.log("initialConfig", initialConfig);
+        throw ValueError("initialConfig has to have either 'id' or  'ref'");
+      }
+
       if (stored != null) {
         stored = JSON.parse(stored);
         if (stored != null) {
@@ -86,8 +100,10 @@ const sketch =
       p5.print("lastAppState:", lastAppState);
       AppState = lastAppState;
       if (initialConfig.ref != undefined) {
-        AppState["ID"] = -1 * AppState["ID"];
+        console.log("ID for a reference is negative:", initialConfig.ref);
+        AppState["ID"] = -1 * initialConfig.ref;
       }
+
       // if (isNaN(AppState["NUMCUBES.COMPACT"])) {
       //   AppState["NUMCUBES.COMPACT"] = 0;
       // }
@@ -8661,10 +8677,11 @@ const sketch =
         AppState["CUTLIMIT"] = initialConfig.cutlimit;
         AppState["UNDOTREE"] = { STEPS: [], INDEX: -1 };
         AppState["INTERACTIVE"] = initialConfig.interactive;
-        AppState["ID"] = initialConfig.id || `ref:${initialConfig.ref}`;
+        AppState["ID"] = -1 * initialConfig.ref || initialConfig.id;
       }
       if (isResumed) {
         tilesList = AppState["TILES"];
+        AppState["ID"] = -1 * initialConfig.ref || initialConfig.id;
       }
 
       //@refactor: ::createFromOptions
@@ -9516,7 +9533,7 @@ const sketch =
   };
 
 
-console.log("Timestamp of build: 2024-10-31 09:43:57.568158");
+console.log("Timestamp of build: 2024-10-31 11:23:26.053514");
 
 let myp5 = new p5(sketch, "sketch")
 
