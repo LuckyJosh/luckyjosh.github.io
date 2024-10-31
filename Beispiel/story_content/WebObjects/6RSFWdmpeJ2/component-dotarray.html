@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html><head>
+<link rel="shortcut icon" href="#">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scaleable=no">
+  <!-- PAGE settings -->
+  <link rel="icon">
+  <title>Divomath: Punktefeld</title>
+  <meta name="description" content="HomePage">
+  <meta name="keywords">
+  <meta name="author" content="IEEM">
+  <!-- CSS dependencies -->
+  <style>
+<!-- :root, -->
+<!-- html { -->
+<!--     overflow: hidden; -->
+<!--     position: absolute;//or fixed -->
+<!--     max-width: 90vw; -->
+<!--     max-height: 90vh; -->
+<!--     } -->
+
+
+    div#sketch{
+    position: absolute;
+
+    height: 94%;
+    margin-top: 0.5%;
+    margin-left: 0.5%;
+    margin-right: 0.5%;
+    margin-bottom: 0.5%;
+    width:95% ;
+    box-shadow: 4px 4px #AAAAAA11;
+    overflow: hidden;
+    }
+
+    .p5Canvas {
+      border-style: solid;
+      border-color: #EFEFEF;
+      border-width: 1px;
+      overflow: hidden;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+</head>
+
+  <body>
+
+    <header>
+      <script>
+      let seed = Math.random().toFixed(8).slice(2);
+
+      let localSetup = document.createElement('script');
+      localSetup.setAttribute('src',`local-setup-component-dotarray.js?rand=${seed}`);
+      document.getElementsByTagName("header")[0].appendChild(localSetup);
+
+      let component = document.createElement('script');
+      component.setAttribute('src',`component-dotarray.js?rand=${seed}`);
+      document.getElementsByTagName("header")[0].appendChild(component);
+
+      </script>
+
+    </header>
+
+
+    <main role="main">
+      <div id="sketch">
+      </div>
+
+    </main>
+  </body>
+    <script>
+  window.addEventListener("message", (e) => {
+	if (e.data.method == "got"){
+		localStorage.setItem(e.data.key, e.data.value);
+	}
+  })
+  </script>
+</html>
