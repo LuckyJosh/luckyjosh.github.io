@@ -236,7 +236,7 @@ const sketch =  /*[[[DELETELINE]]]*/
 
       })
 
-      p5.text(`${Math.floor(STATE.currentAngle)}°${Math.round((STATE.currentAngle - Math.floor(STATE.currentAngle)) * 60, 3)}'`, 55, 25);
+      p5.text(`${Math.floor(STATE.currentAngle)}°${Math.round((STATE.currentAngle - Math.floor(STATE.currentAngle)) * 60, 3)}'`, 55, 50);
       // p5.print(test);
     };
 
