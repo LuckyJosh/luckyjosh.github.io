@@ -84,7 +84,7 @@ const sketch =  /*[[[DELETELINE]]]*/
     };
 
     p5.setup = function() {
-      p5.pixelDensity(2);
+      p5.pixelDensity(4);
       canvas = p5.createCanvas(1960, 950);
       canvas.aspect = canvas.width / canvas.height;
       canvas.relativeCoordinate = function(x, y) {
