@@ -1,0 +1,4228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script>
+    let i = 5;
+
+    console.log(i);
+
+    </script>
+    <title>divoVAM 3.1.0.cdy</title>
+    <style type="text/css">
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+        
+        #console {
+            background-color: #FAFAFA;
+            border-top: 1px solid #333333;
+            bottom: 0px;
+            height: 200px;
+            overflow-y: scroll;
+            position: fixed;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cindyjs.org/dist/v0.8/CindyJS.css">
+    <script type="text/javascript" src="https://cindyjs.org/dist/v0.8/Cindy.js"></script>
+<script id="csinit" type="text/x-cindyscript">
+//FW: divomath config
+// v2
+// Recent changes:
+// - usedivomath added as flag for storyline config
+
+
+// Access divomath editor settings
+'dmconf = divomathConfig.configuration;
+'dmstate = divomathConfig.divomathVarState;
+'dmprevans = divomathPreviousAnswer;
+'dmisviewer = divomathConfig.runtime == "VIEWER"; // otherwise "EDITOR" (or nada)
+
+usedivomath = !isundefined('dmconf); // Flag for setting VAM specific non divomath config overwrites on init
+
+// @Overwrite
+// Builds a state object to be used by divomathGetVarState()
+divomathSetState() := (
+	regional(state);
+
+	// Build a state object, to be transfered to divomath.
+	// should be nada if state is not supposed to change or should equal 'dmstate.
+	// see helper functions (Section E)
+	state = nada;
+	if('debuglevel > 9,
+		println("(!) Overwrite divomathSetState() in current VAM.");
+	);
+		
+	state; // Return state;
+);
+
+// @Overwrite
+// Update divomath results to be used for validation.
+divomathUpdateResults() := (
+	if('debuglevel > 9,
+		println("(!) Overwrite divomathUpdateResults() in current VAM.");
+	);
+);
+
+// Set vam by divomath, else default
+vam = if(!isundefined('dmconf.vam), 'dmconf.vam, "default");
+
+// Set environment vars
+'bgcolor = if(!isundefined('dmconf.bgcolor),
+	'dmconf.bgcolor,
+	[1,1,1]
+);
+'debuglevel  = if(!isundefined('dmconf.debuglevel),
+	'dmconf.debuglevel,
+	0
+); // 0:no debug, >0:higher precision of debug
+
+;
+//FW: configuration
+// v1
+// Vars for configuring VAM behavior
+// Convention - starts with single quote (')
+
+// A | Common flags
+isdebugging='isdebugging = false;	// Toggle debugging. (legacy)
+'debuglevel = 0; // local overwrite for debuglevel set by divomath
+mousepressedtime='mousepressedtime=false;
+
+// B | Screen config parameters
+'bordersize = .05; // default border size (equals 0.5 mm fineliner)
+'pinchsensitivity = 1; // default pinch sensitivity
+'doc = "No docstring for VAM.";
+'doctextpos = (screenbounds()_1).xy+[1,-0.5];
+
+    //FW: constants
+// v9
+// last changes:
+// - added DIVOYELLOW
+
+// Predefined Constants
+// - Convention: Captilize constants
+// - Second copy of variable which does not follow convention for legacy use
+
+// A | Preddefined colors
+// A.0 | General colors
+darkred=DARKRED=(228,26,28)/255;
+darkblue=DARKBLUE=(55,126,184)/255;
+darkgreen=DARKGREEN=(77,175,74)/255;
+
+// A.1 | DZLM colors
+dzlmcolorlight=DZLMCOLORLIGHT = (207,221,225)/255;
+dzlmcolordark=DZLMCOLORDARK = (70,120,132)/255;
+dzlmcolorgold=DZLMCOLORGOLD = (239,182,96)/255;
+dzlmchipblue=DZLMCOLORBLUE = (127,127,247)/255;
+dzlmchipred=DZLMCOLORRED = (239,134,131)/255;
+
+// A.2 | Colors representing place values
+placecolorred=PLACECOLORRED = (102,194,165)/255;
+placecolorgreen=PLACECOLORGREEN = (252,141,98)/255;
+placecolorblue=PLACECOLORBLUE = (141,160,203)/255;
+
+placevaluepalette=PLACEVALUEPALETTE = [
+	PLACECOLORGREEN,  // Hundreds
+	PLACECOLORBLUE,		// Tens
+	PLACECOLORRED			// Units
+];
+
+// A.3 | Divomath colors
+divogreen=DIVOGREEN = (129,239,104)/255;
+divoviolett=DIVOVIOLET = (20,59,216)/255;
+divograu=DIVOGREY = (130,149,192)/255;
+divoschwarz=DIVOBLACK = grey(0);
+divorot=DIVORED = (235,85,78)/255;
+divoblau=DIVOBLUE = (83,125,26)/255;
+DIVODARKBLUE = (6,67,86)/255;
+DIVOYELLOW = (252,175,81)/255;
+
+divopalette=DIVOPALETTE = [
+	DIVOBLUE,
+	DIVODARKBLUE,
+	DIVORED,
+	DIVOGREEN,
+	DIVOVIOLET,
+	DIVOGREY,
+	DIVOBLACK,
+	DIVOYELLOW
+];
+
+// A.4. | Montessori colors
+MONTEGREEN = (100,228,178)/255;
+MONTEBLUE = (108,169,255)/255;
+MONTERED = (240,20,112)/255;
+MONTEGREY = (242,242,242)/255;
+
+MONTEPALETTE = [
+	MONTEGREEN, MONTEBLUE, MONTERED
+];
+
+// A.* | Color palettes
+// Color palettes consisting of colors above
+vampalette=VAMPALETTE= [
+	DARKRED,
+	DARKBLUE,
+	DARKGREEN,
+	DZLMCOLORGOLD,
+	DZLMCOLORDARK
+];
+
+COLORMAP = {
+	"DARKRED" : DARKRED, "DARKBLUE" : DARKBLUE, "DARKGREEN" : DARKGREEN,
+	"DZLMCOLORGOLD" : DZLMCOLORGOLD, "DZLMCOLORDARK" : DZLMCOLORDARK,
+	"PLACECOLORGREEN" : PLACECOLORGREEN,
+	"PLACECOLORBLUE" : PLACECOLORBLUE,
+	"PLACECOLORRED" : PLACECOLORRED,
+	"DIVOGREEN" : DIVOGREEN, "DIVOVIOLET" : DIVOVIOLET, "DIVOGREY" : DIVOGREY,
+	"DIVOBLACK" : DIVOBLACK, "DIVORED" : DIVORED, "DIVOBLUE" : DIVOBLUE
+};
+
+// B | System info
+// B.0 | Version information
+VERSION = version();
+cindyjs=ISCINDYJS = VERSION_1=="CindyJS"; // true, if CindyJS is used
+
+// B.1 | Screen size
+// [width, height] of the the Cindy window
+pixelxy=WINDOWSIZE = 
+	[
+		(screenbounds()_2_1-screenbounds()_1_1)*screenresolution(),
+		(screenbounds()_2_2-screenbounds()_3_2)*screenresolution()
+	];
+
+// C | Fonts
+// C.1 | Available Fonts
+fonts=FONTS = if(cindyjs,[],fontfamilies());
+
+schulfont=SCHULFONT = "Arial";
+//if(contains(fonts,"DejaVu Sans Mono"), schulfont=SCHULFONT = "DejaVu Sans Mono");
+//if(contains(fonts,"Helvetica Neue"), schulfont=SCHULFONT = "Helvetica Neue");
+//if(contains(fonts,"Schulbuch Nord Pro"), schulfont=SCHULFONT = "Schulbuch Nord Pro");
+if(contains(fonts,"Gruschudru basic"), schulfont=SCHULFONT = "Gruschudru basic");
+
+monofont=MONOFONT ="Courier";//"Arial"; //Courier, Monaco
+
+// C.2 | Unicode characters
+checkbox0=CB0 = unicode("2610");
+checkbox1=CB1 = unicode("2612");
+cdot=CDOT = unicode("00B7");
+QUOTE = unicode("0022");
+LEFTARROW = unicode("2190");
+RIGHTARROW = unicode("2192");
+UPARROW = unicode("2191");
+DOWNARROW = unicode("2193");
+DOWNARROWTIPLEFT = unicode("21B2");
+DOWNARROWTIPRIGHT = unicode("21B3");
+ANTICLOCKWISEARROW = unicode("21BA");
+CLOCKWISEARROW = unicode("21BB");
+SHIFTKEYARROW = unicode("21EB");
+HEAVYPLUS = unicode("2795");
+HEAVYMINUS = unicode("2796");
+
+
+ARROWS = [LEFTARROW, RIGHTARROW, UPARROW, DOWNARROW,
+DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW];
+
+// D | Other
+E  = exp(1);
+PI = 3.14292653589793238462643383279;
+PHI = (1 + sqrt(5)) / 2;
+
+VALUEMAP = {
+"1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", "6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", "11" : "Elfer", "12" : "Zwölfer"
+};
+
+COLORSPLASMA10 = {
+  "blue": [0.050383, 0.029803, 0.527975],
+  "purpleblueish": [0.274191, 0.012109, 0.622722],
+  "purple": [0.447714, 0.00208 , 0.66024 ],
+  "purpleredish": [0.610667, 0.090204, 0.619951],
+  "magenta": [0.740143, 0.213864, 0.524216],
+  "redsalmon": [0.846788, 0.342551, 0.420579],
+  "apricot": [0.928329, 0.472975, 0.326067],
+  "orange": [0.983041, 0.624131, 0.227937],
+  "lemon": [0.991209, 0.790537, 0.149377],
+  "yellow": [0.940015, 0.975158, 0.131326]
+};
+
+
+
+maxargmax(l) := (
+regional(newlist);
+  newlist= [];
+  forall(1..length(l),
+    newlist = newlist ++ [[l_#, #]];
+  );
+  sort(newlist, -#_1)_1;
+);
+
+minargmin(l) := (
+regional(newlist);
+  newlist = [];
+  forall(1..length(l),
+    newlist = newlist ++ [[l_#, #]];
+  );
+  sort(newlist, #_1)_1;
+);
+
+
+COUNTINGNUMBERNAMES(number) := (
+regional(numberNames);
+if (isstring(number), number = parse(number));
+
+if (number == 0,
+    "null"
+    ,// else: number > 0
+    numberNames = [
+    "ein",
+    "zwei",
+    "drei",
+    "vier",
+    "fünf",
+    "sechs",
+    "sieben",
+    "acht",
+    "neun",
+    "zehn",
+    "elf",
+    "zwölf",
+    "dreizehn",
+    "vierzehn",
+    "fünfzehn",
+    "sechzehn",
+    "siebzehn",
+    "achtzehn",
+    "neunzehn",
+    "zwanzig",
+    "einundzwanzig",
+    "zweiundzwanzig",
+    "dreiundzwanzig",
+    "vierundzwanzig",
+    "fünfundzwanzig",
+    "sechsundzwanzig",
+    "siebenundzwanzig",
+    "achtundzwanzig",
+    "neunundzwanzig",
+    "dreißig",
+    "einunddreißig",
+    "zweiunddreißig",
+    "dreiunddreißig",
+    "vierunddreißig",
+    "fünfunddreißig",
+    "sechsunddreißig",
+    "siebenunddreißig",
+    "achtunddreißig",
+    "neununddreißig",
+    "vierzig",
+    "einundvierzig",
+    "zweiundvierzig",
+    "dreiundvierzig",
+    "vierundvierzig",
+    "fünfundvierzig",
+    "sechsundvierzig",
+    "siebenundvierzig",
+    "achtundvierzig",
+    "neunundvierzig",
+    "fünfzig",
+    "einundfünfzig",
+    "zweiundfünfzig",
+    "dreiundfünfzig",
+    "vierundfünfzig",
+    "fünfundfünfzig",
+    "sechsundfünfzig",
+    "siebenundfünfzig",
+    "achtundfünfzig",
+    "neunundfünfzig",
+    "sechzig",
+    "einundsechzig",
+    "zweiundsechzig",
+    "dreiundsechzig",
+    "vierundsechzig",
+    "fünfundsechzig",
+    "sechsundsechzig",
+    "siebenundsechzig",
+    "achtundsechzig",
+    "neunundsechzig",
+    "siebzig",
+    "einundsiebzig",
+    "zweiundsiebzig",
+    "dreiundsiebzig",
+    "vierundsiebzig",
+    "fünfundsiebzig",
+    "sechsundsiebzig",
+    "siebenundsiebzig",
+    "achtundsiebzig",
+    "neunundsiebzig",
+    "achtzig",
+    "einundachtzig",
+    "zweiundachtzig",
+    "dreiundachtzig",
+    "vierundachtzig",
+    "fünfundachtzig",
+    "sechsundachtzig",
+    "siebenundachtzig",
+    "achtundachtzig",
+    "neunundachtzig",
+    "neunzig",
+    "einundneunzig",
+    "zweiundneunzig",
+    "dreiundneunzig",
+    "vierundneunzig",
+    "fünfundneunzig",
+    "sechsundneunzig",
+    "siebenundneunzig",
+    "achtundneunzig",
+    "neunundneunzig",
+    "einhundert"
+    ];
+    
+    numberNames_number
+);
+
+
+);
+
+
+
+
+
+
+
+
+
+HEXMAP = {
+	"0":0,"1":1,"2":2,"3":3,"4":4,
+	"5":5,"6":6,"7":7,"8":8,"9":9,
+	"a":10,"b":11,"c":12,"d":13,"e":14,"f":2,
+	"A":10,"B":11,"C":12,"D":13,"E":14,"F":2
+};
+
+;
+//FW: general vars init
+// v1
+// Init of general variables for use in the framework.
+// A | Object lists for drawing
+obj = []; 				// All relevant VAM objects (mostly for drawing)
+objpreview = []; 	// All temporary VAM objects (for drawing)
+
+// B | Flags
+mousedown = false; // Toggles in relevant mouse scripts
+
+getscreenparams():= ( // Set screen parameters
+	bordersize = screenresolution()* 'bordersize; // equals 0.5 mm fineliner
+	pinchsensitivity = 10/screenresolution() * 'pinchsensitivity;
+);
+getscreenparams();
+// -----------------------------------------------
+// Legacy. What is this for?
+typeorder=[]; // venrünftige order: "tasksheet","task","keyboard","multarray","chipreservoir","arraychip"];
+modes= []; // globale Modi, ist vermutlich gar nicht gebraucht, 
+// AGENDA: lieber raus, wir wird benutzt in modebutton und fractionbar
+
+//history = []; // AGENDA: muss noch umgesetzt werden
+
+// bugfix (legacy)
+preview=false;
+
+;
+//FW: animations
+// v1
+// Animations...@Todo: Document
+animations = [];
+
+// animation: object, property, animationtype, 
+//  					start value, starttime,
+//	 					end value, duration
+
+new animationobject(object, property, startvalue, endvalue, duration, timeflow) := (
+	regional(now);
+	now = seconds();
+	if(not(isundefined(delay)),now=now+delay);
+	animations = animations :> 
+		{ "object" : object, "property": property, 
+			"startvalue" : startvalue, "endvalue" : endvalue,
+	  	"starttime" : now, "endtime" : now + duration,
+			"kill" : false,
+			"timeflow" : timeflow,   // should be linear, accel, or jump
+			"movepath": movepath
+		};
+	playanimation();
+);
+
+new animationobjectwithdelay(object, property, startvalue, endvalue, duration, timeflow, delay) := (
+	regional(now,then); now = seconds();
+	then=now+delay;
+	animations = animations :> 
+		{ "object" : object, "property": property, 
+			"startvalue" : startvalue, "endvalue" : endvalue,
+	  	"starttime" : then, "endtime" : then + duration,
+			"kill" : false,
+			"timeflow" : timeflow,   // should be linear, accel, or jump
+			"movepath": movepath
+		};
+	playanimation();
+);
+
+setpropertylater(object, property, value, delay) := (
+	regional(now,then); now = seconds();
+	then=now+delay;
+	animations = animations :> 
+		{ "object" : object, "property": property, 
+			"startvalue" : (object:property), "endvalue" : value,
+	  	"starttime" : now, "endtime" : then,
+			"kill" : false,
+			"timeflow" : "set"   // should be linear, accel, or jump
+		};
+	playanimation();
+);
+
+new animationobject(object, property, startvalue, endvalue, duration, timeflow, kill) := (
+	regional(now); now = seconds();
+	animations = animations :> 
+		{ "object" : object, "property": property, 
+			"startvalue" : startvalue, "endvalue" : endvalue,
+	  	"starttime" : now, "endtime" : now + duration,
+			"kill" : kill,
+			"timeflow" : timeflow, // should be linear, accel, or jump
+			"movepath": movepath
+		};
+	playanimation();
+);
+
+
+new animationpath(object, property, startvalue, endvalue, duration, timeflow, f) := (
+	regional(now); now = seconds();
+	animations = animations :> 
+		{ "object" : object, "property": property, 
+			"startvalue" : startvalue, "endvalue" : endvalue,
+	  	"starttime" : now, "endtime" : now + duration,
+			"kill" : false,
+			"timeflow" : timeflow,
+			"movepath": f
+		};
+	playanimation();
+);
+
+
+new dolater(object, command, duration) := (
+	regional(now); now = seconds();
+	animations = animations :> 
+		{ "object" : object, 
+	  	"starttime" : now, 
+			"endtime" : now + duration,
+			"command" : command
+		};
+	playanimation();
+);
+
+
+if(false,
+moveanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(10),random(10)),0.5,"linear");
+
+accelanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(10),random(10)),0.5,"accel");
+
+killanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(10),random(10)),0.5,"accel",true);
+
+coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(random(1)),0.5,"linear");
+);
+
+;
+//FW: helper functions
+// v11
+// Recent changes:
+// - added values() function
+// - added ellipse() functions
+// - added defaultto() function
+// - added drawtextbox() function
+// - overloaded getboundingbox(3) to get boundingbox for textbox drawing
+// - added defaultstateto() function for handling 'dmstate and 'dmprevans keys
+// - removed label bg in drawtextbox() -> does not work in HTML for some reason
+// - 
+
+// Convenience functions
+// A | VAM object functions
+// A.0 | Instance methods (kind of); only useful as object properties
+my(property) := ( // Getter some property.
+	self():property;
+);
+set my(key, value) := self():key = value; // Setter
+
+namedef(object) := ( // Sets a "name" property
+	object:"name" := self():"type"+self():"coord";
+);
+copyonmove(object):= ( // Copies an object, when it is moved.
+	object:"clickcopy" := self():"copy";
+	object:"number" := 0;
+);
+copyonmove2(object):= ( // sorgt dafür, dass ein Objekt kopiert wird, wenn es bewegt wird
+	object:"clickcopy" := (
+		copy = self():"copy";copy:"deletecopyifnotmovedandsubstitutebyoriginal"=self();copy;
+	);
+	object:"number" := 0;
+);
+
+// A.1 | Setter
+//**Sets some key:value pair of an object. 
+//* Fails if object does not have key.
+//*	@param object: reference to object to be changed
+//* @param    key: attribute to be changed
+//* @param  value: new value for corresponding key
+//* @returns: new value if succesful, nada if key not in object.
+//**
+setProperty(object, key, value) := (
+	if (object:key == nada,
+		err("setProperty(): Cannot set property. Key not in object.");
+		nada,
+		object:key = value;
+	);
+);
+
+// Convenience setters for shared attributes of every VAMobject
+setType(object, type) 							:= object:"type" = type;
+setCoords(object, coord) 						:= object:"move"; // Do not access coords directly
+setIshot(object, ishot) 						:= object:"ishot" = ishot;
+setIsmoveable(object, ismoveable) 	:= object:"ismoveable" = ismoveable;
+setIsclickable(object, isclickable)	:= object:"isclickable" = isclickable;
+setGetAction(object, getaction) 		:= object:"getaction" = getaction;
+
+toggleIshot(object) 			:= object:"ishot" = !object:"ishot";
+toggleIsmoveable(object)	:= object:"ismoveable" = !object:"ismoveable";
+toggleIsclickable(object)	:= object:"isclickable" = !object:"isclickable";
+
+// A.2 | Getter
+get(object, property) := object:property;
+
+// A.3 | Children
+//**
+//*
+//**
+appendchild(object, child) := (
+	regional(hasnoparent, canhavechildren);
+	hasnoparent 		= child:"parent" == nada;
+	canhavechildren = object:"children" != nada;
+
+	// Parent has no "children" key.
+	if(!canhavechildren,
+		err("Object is not ready to be a parent. Create object: 'children' = []");
+	);
+	// Childs "parent" key is not nada.
+	if(!hasnoparent,
+		err("Child already has a parent.");
+	);
+	// Child has no parent & parent can have children
+	if(canhavechildren & hasnoparent,
+		// Set parents 'sizeofchildren' property accordingly
+		object:"sizeofchildren" = object:"sizeofchildren" + child:"size";
+		// Append child to parent and add parent to child
+		object:"children" = object:"children" :> child;
+		child:"parent" = object;
+	);
+);
+
+//**
+//*
+//**
+popchild(object,child) := (
+	if (contains(object:"children",child),
+		// Set parents 'sizeofchildren' property accordingly
+		object:"sizeofchildren" = object:"sizeofchildren" - child:"size";
+		// Remove child from parent and vice versa
+		object:"children" = object:"children" -- [child]; 
+		child:"parent" = nada;
+	, // else
+		err("Object and child are in no relation to each other.");
+	);
+);
+
+// A.4 | General
+//**Call a property (function) of a VAM object, with some settable parameters
+//* @param object: VAM object reference
+//* @param action: key of the property (String)
+//* @param startmouse: used to calc "coord" for mouse starting mouse coordinates as reference point for the object on click
+//* @param startcoord: used to calc "coord" for mouse starting mouse coordinates
+//* @param mouse: TODO
+//* @param mousedelta: TODO
+//**returns: The result of the called function.
+act(object, action, startmouse, startcoord, mouse, mousedelta) := (
+	eval(object:action,	coord->startcoord-startmouse+mouse, 
+											delta->startcoord-startmouse,
+											mouse->mouse,
+											startmouse->startmouse,
+											startcoord->startcoord,
+											mousedelta->mousedelta
+	);
+);
+
+// B | Geometry
+// B.0 | General Polygons
+
+//**Generate a regular polygon with a specified number of verticies.
+//* @param center: [x,y] of the center of the poly
+//* @param radius: radius of the circumcircle
+//* @param vertices: number of vertices
+//**@returns: list of points or nada (if vertices < 3)
+regularpolygon(center, radius, vertices, rotation) := (
+	// Circle if no vertices, polygon otherwise
+	if(vertices > 2,
+		apply(
+		1..vertices,
+		center + radius * (
+			sin(rotation + #*2*PI / vertices),
+			cos(rotation + #*2*π/vertices))
+		)
+	)
+);
+
+//**Calculate centroid of a polygon using the geometric formula.
+//* @param polygon: A list of points forming the polygon
+//**@returns: [x,y] Coords of the centroid.
+centroid(polygon) := (
+    n = length(polygon);
+    area = 0;
+    cx = 0;
+    cy = 0;
+    
+    repeat(n, i,
+        j = mod(i, n) + 1;  // Next vertex (loops back to first)
+        p1 = polygon_i;      // Current vertex
+        p2 = polygon_j;      // Next vertex
+        
+        // Cross product term for area calculation
+        factor = p1.x * p2.y - p2.x * p1.y;
+        
+        // Accumulate coordinates for centroid
+        cx = cx + (p1.x + p2.x) * factor;
+        cy = cy + (p1.y + p2.y) * factor;
+        
+        // Accumulate signed area
+        area = area + factor;
+    );
+    
+    // Complete the area calculation
+    area = area/2;
+    
+    // Calculate final centroid coordinates
+    if(abs(area) > 0.000001, // Check if area is not too close to 0
+        cx = cx/(6*area);
+        cy = cy/(6*area);
+        [cx, cy]
+    ,
+        // Fallback to arithmetic mean if area is too small
+        centerofmass(polygon)
+    );
+);
+
+// Calculate center of mass (arithmetic mean of vertices)
+centerofmass(polygon) := sum(polygon)/length(polygon);
+
+//** Gets the bounding box of a polygon as
+//** [minX, maxX, minY, maxY]
+getboundingbox(poly) := (
+	regional(minX, maxX, minY, maxY);
+	minX = maxX = minY = maxY = nada;
+	
+	forall(poly,
+		// Fill on first pass.
+		if(isundefined(minX), minX = #_1);
+		if(isundefined(maxX), maxX = #_1);
+		if(isundefined(minY), minY = #_2);
+		if(isundefined(maxY), maxY = #_2);
+		
+		// Update on subsequent passes as required.
+		if(#_1 < minX, minX = #_1);
+		if(#_1 > maxX, maxX = #_1);
+		if(#_2 < minY, minY = #_2);
+		if(#_2 > maxY, maxY = #_2);
+	);
+	
+	// Return
+	[minX, maxX, minY, maxY];
+);
+
+//** Checks if a point is inside a polygon (by ray casting)
+//**
+inpoly(poly, point) := (
+	regional(rayStart, rayDir, edgeStart, edgeDir, 
+		A, solution, numIntersections
+	);
+	// Fix starting point just left outside the bounding box of the poly.
+	rayStart = (getboundingbox(poly)_1 - 1, point.y + exp(1));
+	rayDir = point - rayStart;
+	//**Start Ray left of the bounding box and at the y coordinate
+	//* of the point moved up by Euler's number to minimize chance of
+	//* edge cases, i.e. intersecting at a corner of the polygon.
+	//**Also: Possible shortcut, if point outside bounding box.
+
+	// Iterate over all edges and check for count intersections with ray.
+	numIntersections = 0;
+	repeat(length(poly),
+		// If not at the last vertex get edge by looking ahead one.
+		if(# != length(poly),
+			edgeStart = poly_#;
+			edgeDir = poly_(#+1) - poly_#;
+		, // Else, consider the last and first vertex (last pass only)
+			edgeStart = poly_#;
+			edgeDir = poly_1 - poly_#;
+		);
+		
+		// Check ray and edge for intersection
+		A = [[rayDir_1, -edgeDir_1], [rayDir_2, -edgeDir_2]];
+		solution = linearsolve(A, edgeStart - rayStart);
+		
+		// Count as intersection if both entries of solution are in [0,1].
+		if(solution_1 >= 0 & solution_1 <= 1 &
+			solution_2 >= 0 & solution_2 <= 1,
+			numIntersections = numIntersections + 1;
+		);
+	);	
+
+	// Return	true if odd number of intersections
+	mod(numIntersections, 2) == 1;
+);
+
+// B.1 | Rectangle
+
+//**A polygon, starting starting at coords in the bottom left going CCW.
+//* @param coords: [x,y] of bottom left corner of the rectangle
+//* @param width/height: width/height of rectangle
+//* returns: [A,B,C,D] list of corners of the rectangle
+//**
+rectangle(coords, width, height) := (
+	apply([(0,0),(width,0),(width,height),(0,height)],#+coords);
+);
+
+//**A rectangle width given width and height width rounded corners
+//* @param coords: [x,y] of bottom left corner of the (not rounded) rectangle
+//* @param width/height: width/height of (not rounded) rectangle
+//* @param cornerradius: Radius with which to round the corners. Should be at maximum: min(width,height)/2
+//* returns: Shape representing the rounded rectagnle
+//**
+roundedrectangle(coords, width, height, cornerradius) := (
+	regional(lowerleft, lowerright, upperright, upperleft, 
+		verticalrect, horizontalrect, shadowrect
+	);
+	
+	// The 'normal' rectangle for reference
+	shadowrect = rectangle(coords, width, height);
+	
+// Adjust cornerradius if to big
+	if(cornerradius > min(width,height)/2, cornerradius = min(width,height)/2);
+
+	// Create circles for rounded corners (lowerleft, ...)
+	lowerleft  = circle(shadowrect_1 + [cornerradius,cornerradius]  , cornerradius);
+	lowerright = circle(shadowrect_2 + [-cornerradius,cornerradius] , cornerradius);
+	upperright = circle(shadowrect_3 + [-cornerradius,-cornerradius], cornerradius);
+	upperleft  = circle(shadowrect_4 + [cornerradius,-cornerradius] , cornerradius);
+
+	// Create two bounding rectangles
+	verticalrect   = rectangle(
+		shadowrect_1 + [cornerradius,0],
+		width-2*cornerradius,
+		height
+	);
+	verticalrect   = polygon(verticalrect);
+	horizontalrect = rectangle(
+		shadowrect_1 + [0,cornerradius],
+		width,
+		height-2*cornerradius
+	);
+	horizontalrect = polygon(horizontalrect);
+
+	// Build shape and return
+	lowerleft ++
+		lowerright ++
+		upperright ++
+		upperleft ++
+		verticalrect ++
+		horizontalrect;
+);
+
+//**Check if a given point [x,y] is in a rectangle.
+//* @param rect: [A,B,C,D] list of [x,y]-points of rectangle
+//* @param point: point [x,y] to check
+//**
+inrectangle(rect, point) := (
+	point.x >= rect_1_1 & 
+	point.x <= rect_2_1 & 
+	point.y <= rect_3_2 & 
+	point.y >= rect_1_2;
+);
+
+//** @TODO (legacy) **//
+inrectangle(rect, pos, border) := (
+																pos.x > rect_1_1 - border & pos.x - border < rect_2_1
+																& pos.y - border < rect_3_2 & pos.y > rect_1_2 - border;
+																);
+// Is that used somewhere?
+rectinrectangle(rect1,rect2):=inrectangle(rect1,rect2_1) & 
+															inrectangle(rect1,rect2_2) &
+															inrectangle(rect1,rect2_3) &
+															inrectangle(rect1,rect2_4); 
+rectinrectangle(rect1,rect2,border):=inrectangle(rect1,rect2_1,border) & 
+															inrectangle(rect1,rect2_2,border) &
+															inrectangle(rect1,rect2_3,border) &
+															inrectangle(rect1,rect2_4,border);
+
+// B.2 | Triangle
+//**Check if a given point [x,y] is in a triangle.
+//* @param rect: [A,B,C] list of [x,y]-points of triangle
+//* @param point: point [x,y] to check
+//**
+intriangle(triangle, point) := (
+	if(length(triangle)==3,
+		and(
+			gtzero(area(triangle_1,triangle_2,point)) == gtzero(area(triangle_2,triangle_3,point)),
+			gtzero(area(triangle_2,triangle_3,point)) == gtzero(area(triangle_3,triangle_1,point))
+		)
+	, // else
+		false
+	); 
+);
+
+// B.3 Other Geometry
+rotate(point, angle, center) := (
+	point = point - center;
+	point = point * [
+		[cos(angle),sin(angle)],
+		[-sin(angle),cos(angle)]
+	];
+	point + center;
+);
+
+// Returns a list of points along an elliptical arc
+// Parameters:
+// center: center of the ellipse (e.g., [0,0])
+// a: semi-axis length in x-direction
+// b: semi-axis length in y-direction
+// angle: rotation angle of the ellipse in radians (optional)
+// t1: start angle (parameter domain, e.g., 0) (optional)
+// t2: end angle (parameter domain, e.g., pi/2) (optional)
+// steps: number of segments (optional)
+
+ellipse(center, a, b, angle, t1, t2, steps) := (
+	// Setup optional variables
+	angle	= if(!isundefined(angle), angle, 0);
+	t1		= if(!isundefined(t1), t1, 0);
+	t2		= if(!isundefined(t2), t2, 2*PI);
+  steps = if(!isundefined(steps), steps, 100);
+
+	regional(points);
+  points = [];
+
+  forall(0..steps,
+    t = t1 + (t2 - t1) * # / steps;
+    p = [a * cos(t), b * sin(t)];
+
+    // Apply rotation
+    p = [
+      cos(angle)*p_1 - sin(angle)*p_2,
+      sin(angle)*p_1 + cos(angle)*p_2
+    ];
+
+    // Apply translation
+    p = p + center;
+    points = points :> p;
+  );
+
+  points;
+);
+
+ellipse(center, a, b, t1, t2) := ellipse(center, a, b, nada, t1, t2, nada);
+ellipse(center, a, b) := ellipse(center, a, b, nada, nada, nada, nada);
+
+// C | Textboxes
+// (Overloaded) Gets the bounding rectangle for a text with given size and font
+getboundingbox(text, coord, size, font) := (
+	regional(pxsize);
+	bold = defaultto(bold, false);
+
+	pxsize = pixelsize(text, size->size, font->font, bold->bold); // [width,height,baseline] in px
+	pxsize = pxsize / screenresolution(); // divide by resolution to geht values in coords
+	rectangle(coord,pxsize_1,pxsize_2); // return rectangle
+);
+
+// Draws a textbox with optional backgroundcolor
+drawtextbox(coord, text, size, font, bgcolor) := (
+	bgcolor = defaultto(bgcolor, grey(.9));
+	bold = defaultto(bold, false);
+	alpha = defaultto(alpha, 1);
+
+	// fillpoly(getboundingbox(text, coord, size, font), color->bgcolor, alpha->alpha);
+	drawtext(coord, text, size->size, font->font, bold->bold);
+);
+
+// D | Commands
+or(list)  := (regional(x);x=false;forall(list,x=x%#));
+and(list) := (regional(x);x=true;forall(list,x=x&#));
+
+//** Does some default action if something is undefined, else does something.
+//* @param something: To be checked and executed if defined
+//* @param default: Thing to execute, if something is undefined.
+//**
+ifdefined(something, default) := if(isundefined(something),default,something);
+
+reset VAM():=();
+// for dolater (see Animations)
+commands = {};
+commands:"reset" := reset VAM();
+
+// E | Divomath
+//**Used by divomaths SendState function to update the state
+//* (if any) and set the previousAnswer variable. Use with 
+//* divomathSetState(), which has to be implemented in every VAM 
+//* individually, according to the VAMs specific needs.
+//** @param dmcb: name of divomath callback (dmcb) function
+divomathGetVarState(dmcb) := (
+	regional(state);
+	state = divomathSetState();
+	
+	// Send last answer to DM and (maybe) overwrite state
+	if(!isundefined(state),
+		javascript(dmcb+"("+state+")");
+	,
+		javascript(dmcb+"()");
+	);
+);
+
+// Checks 'dmstate and 'dmprevans for "key" and returns value,
+// else returns default "value"
+defaultstateto(key, value) := (
+	regional(prevansvalue, resultkey, resultvalue, stateobject, statevalue);
+
+	// Get config overwrites for forward referencing from RESULT structure (if any)
+	resultkey = "__" + key; // Built key with dunder to separate from other keys of 'dmconf
+	resultvalue = divomathConfig:resultkey; // Get corresponding value if any
+
+	// Check 'dmprevans for if there already was an interaction from a previous session
+	prevansvalue = if(contains(keys('dmprevans), key), 'dmprevans:key);
+	
+	// Get value from stateobject, if any ( for resetting previous state
+	stateobject = defaultto('dmstate, {}); // Set 'dmstate manually to empty object
+	if(islist(stateobject), stateobject = {}); // 'dmstate is empty list not nada, if divomath site is revisted
+	statevalue = if(contains(keys(stateobject), key), 'dmstate:key);
+
+	// Set correct value
+	if(!isundefined(resultvalue), value = resultvalue, // First, try overwrite value if any
+		if(!isundefined(prevansvalue), value = prevansvalue, // Second, try previous answer if any
+			if(!isundefined(statevalue), value = statevalue; // Lastly, try using state if any
+	))); // if all fails use value from param
+	
+	// Return
+	value;
+);
+
+// * | Other
+// *.1 | Random math
+sign(x):= if(x<0,-1,if(x>0,1,0));
+gtzero(x):= x>=0;
+hex(int) := "0123456789ABCDEF"_(1+floor(int/16))+"0123456789ABCDEF"_(1+mod(int,16));
+integer(hex) := (
+	regional(len, key, result);
+	len = length(hex);
+	result = 0;
+	repeat(len,
+		key = hex_(len+1-#);
+		result = result + 16^(#-1) * HEXMAP:key;
+		println(# + " : " +result));
+);
+
+// Returns coords of point, when mirrored at line 
+// given by an array of two points [p1,p2].
+mirror(point, line) := (
+	regional(a,b,c, help);
+	// Find parameters of line.
+	a = line_1_2 - line_2_2;
+	b = line_2_1 - line_1_1;
+	c = line_1_1 * line_2_2 - line_2_1 * line_1_2;
+	
+	// Foot of perpendicular line.
+	help = -2 * (a * point_1 + b * point_2 + c) / (a^2 + b^2);
+	
+	// Return 
+	[help * a + point_1, help * b + point_2];
+);
+
+// *.2 | Random drawing
+drawmovearrow(P,dx):= (
+	dy=perp(dx);
+	drawall(
+		[ // arrow
+			[P,P+dx],
+			[P,P+(dx+dy)*.3],
+			[P,P+(dx-dy)*.3],
+			[P+dx,P+dx+(-dx+dy)*.3],
+			[P+dx,P+dx+(-dx-dy)*.3]
+		],
+		color->(0,0,0),
+		alpha->0.5
+	);
+);
+
+// *.3 | Random lists
+list(thing) := (
+	// Create list (behaviour depending on type of input)
+	// If nada, return nada
+	// If string, return char array
+	// If list, return the unaltered list
+	// else: Put the thing (number, object, ...) in a list
+	regional(list);
+	list = thing;
+	if(!islist(thing),
+		if(isundefined(thing),list = []);
+		if(isstring(thing),
+			repeat(length(thing), list = list :> thing_#);
+		);
+		if(!isundefined(thing) & !isstring(thing), list = [thing]);
+	);
+	list;
+);
+
+listor(list):=contains(list,true);
+
+// Get all values of an object in a list (equivalent to keys())
+values(o) := (
+	regional(values);
+	values = [];
+	forall(keys(o), key, values = values :> o:key);
+	values; // Return
+);
+
+// *.4 | Random other stuff
+colorsort(list):=(
+	regional(slist,sub);
+  list = select(list,# != false) ++ select(list, # == false);
+	while(length(list)>0,
+		sub=select(list,#==list_1);
+		slist=slist++sub;list=list--sub;
+	);
+	slist;
+);
+
+hexcolor(c):=hex(255*(c_1))+hex(255*(c_2))+hex(255*(c_3)); 
+
+colorizestring(s,c):=
+if(cindyjs,
+"\color{#"+hexcolor(c)+"}{\Large "+s+"}"
+,
+"{\color{"+hexcolor(c)+"}"+s+"}"
+); // c = color in RGB, s Latex-Strng ohne $$
+
+//err(cindyjs);
+//err(hexcolor((.5,1,.5)));
+//err(colorizestring("Hallo",(.5,0,1)));
+
+tickfactor(q):= (
+			//q=v/dv;//round(v/dv*100)/100;
+			if(mod(q/10,10)==0,3,if(mod(q,10)==0,2,1));	
+						);
+
+transformedcolor(c):= (
+	apply(c, if(colorblendmode=="sigmoid",	#^7 / (.5^7+ #^7), # ););
+);
+
+defaultto(var, defaultvalue) := if(!isundefined(var), var, defaultvalue);
+
+;
+//C: VAMobject
+// v1
+// Base Class for VAMobject
+new VAMobject(type) := (
+	regional(obj);
+	obj = {
+		"coord" 			: [0,0],
+		"type"  		  : type,
+		"ismoveable"  : false,
+		"copyonmove"	: false,
+		"isclickable" : false,
+		"getaction" 	: "move",
+		"color" 			: VAMPALETTE_1
+	};
+	obj:"name" 			:= self():"type"+self():"coord";
+	obj:"ishot" 		:= dist(self():"coord",mouse().xy) < 1;
+	obj:"move"  		:= if(self():"ismoveable", self():"coord" = coord);
+	obj:"moveend"		:= nada;
+	obj:"clickcopy" := if(self():"copyonmove", self():"copy");
+	obj:"copy"  		:= (regional(r); r = new VAMobject(my("type")));
+	obj:"draw"			:= fill(
+		circle(self():("coord"),1),
+		color->self():"color"
+	);
+	obj:"click"			:= if(self():"isclickable", 
+		self():"color" = apply(self():"color",|1-#|)
+	);
+	
+	obj; // Return the VAMobject.
+);
+
+;
+//C: Workbench, WorkbenchElement
+// v1
+//**Class Workbench:
+//* A rectengular area where objects can be stored and copied from.
+//*	Copies that are dragged back to the workbench get destroyed.
+//* @param coords: bottom left corner of the Workbench
+//* @param width:	 width of the Workbench
+//* @param height: height of the Workbench
+//* @param color:	 color of the Workbench
+//**
+new Workbench(coords, width, height, color) := (
+	regional(obj);
+	obj = new VAMobject("Workbench");
+	obj:"color"  	 = color;
+	obj:"coord"    = coords;
+	obj:"width"    = width;
+	obj:"height"   = height;
+	obj:"children" = []; // Fill with VAM objects.
+	obj:"sizeofchildren" = 0; // sum of sizes of all children.
+	obj:"align"		 = "right";
+	obj:"shape"  	:= rectangle(self():"coord",self():"width",self():"height");
+	obj:"ishot"	 	:= inrectangle(self():"shape", mouse());
+	obj:"draw"  	:= (
+		drawpoly(
+			self():"shape",
+			size->bordersize, 
+			color->self():"color"
+		);
+		fillpoly(
+			self():"shape", 
+			color->self():"color", 
+			alpha->if(self():"ishot",0.2,0.1)
+		);
+	);
+
+	obj:"drawchild" := (
+		regional(child);
+		child = currentchild; // Use with 'eval(..., currentchild->self())'.
+
+		if(self():"align" = "right",
+			println("TO DRAW: " + child);
+		, // else
+		err("Only right align is implemented right now.");
+		);
+	);
+
+	obj:"dropevent" := (
+			if(dropobject:"type"=="WorkbenchElement" & !dropobject:"copyonmove",
+ 			  new animation(dropobject,"scale",dropobject:"scale",0.3,0.05,"linear", 0, true);
+				//obj = obj -- [dropobject];
+			);
+	 );
+
+	obj; // Return Workbench.
+);
+
+//**Class Workbench:
+//* Workbench with fixed position on the left side of the screen and fixed size or size relative to screen width/height.
+//* @param 		 type: "fixed" or "relative" depending if a fixed size or a relative size (in relation to the screen height/width) is preferred.
+//* @param 		 size: Size of the Workbench (if type="fixed" in absolute terms, if type=" relative" in percent of screen width/size)
+//* @param position: one of "left", "right", "top", "bottom"
+//**
+new Workbench(wbtype, size, position) := (
+	if(!contains(["fixed","relative"],wbtype),
+		// Raise error, if type is wrong
+		err("wbtype has to be 'fixed' or 'relative'");
+	, // else
+		if (!contains(["left", "right", "top", "bottom"],position),
+			// Raise error, if position is wrong
+			err("position has to be 'left', 'right', 'top', 'bottom'");
+		, //else
+			// Create Workbench
+				regional(obj);
+				obj = new Workbench(0,0,0,DZLMCOLORDARK);
+				obj:"position"	= position;
+				obj:"wbtype" 		= wbtype;
+				obj:"size" 			= size;
+
+				obj:"coord" := (
+					regional(coords);
+					// LEFT and BOTTOM is independet of choice of 'type'
+					if(contains(["left","bottom"],self():"position"),
+						coords = (screenbounds()_4).xy;
+					);
+					
+					// FIXED for RIGHT and TOP
+					if(self():"wbtype" == "fixed",
+						if(self():"position" == "right",
+							// FIXED size on the RIGHT side
+							coords = (screenbounds()_3).xy - [self():"size",0];
+						);
+						if(self():"position" == "top",
+							// FIXED size on TOP
+							coords = (screenbounds()_1).xy - [0,self():"size"];
+						);
+					);
+
+					// RELATIVE for RIGHT and TOP
+					if(self():"wbtype" == "relative",
+						if(self():"position" == "right",
+							// RELATIVE size on the RIGHT side
+							coords = (screenbounds()_3).xy - [self():"size" * |screenbounds()_4_1 - screenbounds()_2_1|,0];
+						);
+						if(self():"position" == "top",
+							// RELATIVE size on TOP
+							coords = (screenbounds()_1).xy - [0,self():"size" * |screenbounds()_4_2 - screenbounds()_2_2|];
+						);
+					);
+					coords; // Return result.
+				);
+
+				obj:"width"		:= (
+					regional(width);
+					if(contains(["top","bottom"],self():"position"),
+						// If TOP or BOTTOM use width of entire canvas
+						width = |screenbounds()_4_1 - screenbounds()_2_1|;
+					, // else (LEFT or RIGHT)
+						if(self():"wbtype" == "fixed",
+							// If FIXED, width is equal to size field.
+							width = self():"size";
+						, // else (RELATIVE)
+							width = self():"size" * |screenbounds()_4_1 - screenbounds()_2_1|;
+						);
+					);
+					width; // Return result.
+				);
+
+				obj:"height"	:= (
+					regional(height);
+					if(contains(["left","right"],self():"position"),
+						// If LEFT or RIGHT use width of entire canvas
+						height = |screenbounds()_4_2 - screenbounds()_2_2|;
+					, // else (TOP or BOTTOM)
+						if(self():"wbtype" == "fixed",
+							// If FIXED, width is equal to size field.
+							height = self():"size";
+						, // else (RELATIVE)
+							height = self():"size" * |screenbounds()_4_2 - screenbounds()_2_2|;
+						);
+					);
+					height; // Return result.
+				);
+
+				obj; // Return Workbench.
+		);
+	);
+);
+
+//**Class Workbench:
+//* Basic workbench with relative layout, positioned on the left, taking 2% of the canvas.
+//**
+new Workbench() := new Workbench("relative", 0.2, "left");
+
+//**Class WorkbenchElement:
+//* 
+//**
+new WorkbenchElement(center, size, color, copyonmove, label) := (
+	regional(obj);
+	obj = new VAMobject("WorkbenchElement");
+	obj:"coord"		 		= center;
+	obj:"size"		 		= size;
+	obj:"label"				= label;
+	obj:"img"					= nada;
+	obj:"cornerradius"= size/10;
+	obj:"color"				= color;
+	obj:"ismoveable"	= true;
+	obj:"copyonmove"	= copyonmove;
+	obj:"scale"				= 1;
+	obj:"parent"			= nada; // Should be a Workbench object
+
+	obj:"shape" := (
+		// Shape consists of 2 rectangles and 4 circles for rounded corners
+		rectangle(
+			apply(self():"coord", (#-self():"scale"*self():"size"/2)),
+			self():"scale"*self():"size",
+			self():"scale"*self():"size"
+		);
+	);
+	obj:"ishot" := inrectangle(self():"shape", mouse());
+	obj:"draw" := (
+		drawpoly(self():"shape", size->bordersize, color->self():"color");
+		fillpoly(
+			self():"shape", 
+			color->self():"color", 
+			alpha->if(self():"ishot",1,0.8)
+		);
+		drawimage(
+			self():"coord",
+			self():"img",
+			scale->self():"scale"
+		);
+		drawtext(
+			apply(self():"coord",
+				#-self():"scale"*self():"size"/2+'bordersize
+			),
+			self():"label",
+			size->self():"size"*7*self():"scale"
+		);
+	);
+	obj:"clickcopy" := if(self():"copyonmove", self():"copy");
+	obj:"copy"  		:= (
+		regional(r);
+		r = new WorkbenchElement(
+			self():"coord",
+			self():"size",
+			self():"color",
+			false,
+			self():"label"
+		)
+	);
+
+	obj; // Return WorkbenchElement.
+);
+
+;
+//C: Button
+// v4
+// Recent changes:
+// - added labelheight and fontfamily fields
+new Button(coord,width,height,label,fontsize) := (
+	regional(obj);
+	obj = new VAMobject("Button");
+
+	obj:"coord"  = coord;
+	obj:"width"  = width;
+	obj:"height" = height;
+	obj:"cornerradius" = (width+height) / 50;
+	obj:"color"	 = dzlmcolorlight;
+	obj:"bordercolor" = dzl;
+	obj:"fontcolor" = dzlmcolordark;
+	obj:"label"	 = label;
+	obj:"fontsize" = defaultto(fontsize, 12);
+	obj:"fontfamily" = nada;
+	obj:"labelheight" = (
+		regional(box);
+		box = getboundingbox(label,[0,0],obj:"fontsize",obj:"fontfamily");
+		box_4_2 - box_1_2;
+	);
+
+	obj:"ismoveable" = false;
+	obj:"hasshadow" = true;
+	obj:"hasborder" = true;
+	obj:"show" = true;
+	obj:"hitbox" := rectangle(
+		my("coord"),
+		my("width"),
+		my("height")
+	);
+	obj:"shape" := roundedrectangle(
+		my("coord"),
+		my("width"),
+		my("height"),
+		my("cornerradius")
+	);
+	obj:"draw" := if(my("show"),
+		// Draw shadow
+		if(my("hasshadow"),
+			fill(roundedrectangle(
+				my("coord")+[0.03,-0.05],
+				my("width"),
+				my("height"),
+				my("cornerradius")
+				),
+				color->[0,0,0],
+				alpha->0.2
+			);
+		);
+		// Draw box and border
+		fill(
+			my("shape"),
+			color->if(my("ishot"),0.95*my("color"),my("color")),
+			alpha->1
+		);
+		if(my("hasborder"), draw(
+			my("shape"),
+			color->my("bordercolor");
+		));
+		// Draw Label
+			drawtext(
+				my("coord")+(my("width"),
+				my("height")/2)/2, 
+				align->"center",
+				color->my("fontcolor"),
+				my("label"),
+				size->my("fontsize")
+			);
+		// Draw something after the button
+		my("drawafter");
+	);
+	obj:"drawafter" := nada;
+	obj:"ishot" := if(my("show"),inrectangle(my("hitbox"),mouse().xy));
+  obj:"click"	:= my("script");
+  obj:"script" := println("Implement obj:script"); 
+
+	obj; // Return the button.
+);
+
+;
+//C: Toggle
+// v1
+new Toggle(coord,width,state,label,fontsize) := (
+	regional(o);
+	o = new Button(coord,width,width/2,label,fontsize);
+	o:"type" = "Toggle";
+	
+	o:"cornerradius" = width;
+	o:"state" = if(!isundefined(state),state,false);
+	o:"highlightcolor" = DARKBLUE;
+
+	o:"draw" := (
+		// Draw box and border
+		fill(
+			my("shape"),
+			color->if(my("state"),my("highlightcolor"),grey(0.98)),
+			alpha->1
+		);
+		draw(
+			my("shape"),
+			color->grey(0.5),
+			alpha->1
+		);
+
+		// Draw circle
+		regional(center);
+		center = my("coord")+[my("height"),my("height")] / 2,
+		if(my("state"), // move circle right, if toggled
+			center = center + [my("width")-my("height"),0]
+		);
+
+		fillcircle(
+			center,
+			1.2 * my("height") / 2,
+			color->my("color");
+		);
+
+		// Draw label
+		drawtext(
+			my("coord")+[my("width")*1.2,.5*my("height")/3],
+			my("label"),
+			align->"left",
+			color->dzlmcolordark,
+			size->my("fontsize")
+    );
+
+
+
+		// Draw something after the button
+		my("drawafter");
+	);
+	
+	o:"click"	:= (
+		set my("state", !my("state"));
+		my("script");
+	);
+
+	o:"script" := ();
+
+	o; // Return the toggle.
+);
+
+//C: Keyboard
+// v1
+
+// Global config
+'fontsize = 16;
+'size = 1;
+
+// Key for Keyboard
+new Key(coord, width, height, label) := (
+	regional(o);
+	o = new Button(coord, width, height, label, 'fontsize); // @TOdo: scale fontsize based on size
+	o:"type" = "key";
+	o:"target" = target;
+	o:"bordercolor" = o:"color" * .8;
+	o:"cornerradius" = 0;
+	o:"hasshadow" = false;
+
+	o:"script" := my("label"); // Return label
+
+	o; // Return Key;
+);
+
+new Key(coord, size, label) := new Key(coord, size, size, label);
+
+// Keyboard
+new Keyboard(coord, subtype, keysize, target) := (
+	regional(o, subtypes);
+	o = new VAMobject("keyboard");
+	subtypes = ["full", "numeric"];
+	o:"subtype" = if(contains(subtypes,subtype),subtype,"full");
+	o:"coord" = coord;
+	o:"keysize" = keysize;
+	o:"keys" = [];
+	o:"margin" = .1;
+	o:"ismoveable" = false;
+
+	o:"target" = target;
+	o:"value" = "";
+
+  o:"shift" = false;
+
+	o:"ishot" := length(select(my("keys"),#:"ishot")) > 0;
+
+	o:"click" := (
+		regional(key, value);
+		value = my("value");
+		key = select(my("keys"),#:"ishot"); // Get all the hot keys (should be exactly one)
+
+		// Get key label with out of bounds check (should not happen)
+		if(length(key) > 0, key = key_1:"label");
+			
+		// Add character if not clicked on an arrow key 
+		if(!contains([DOWNARROWTIPLEFT,LEFTARROW,SHIFTKEYARROW], key),
+			value = value + key;
+		);
+
+		// Execute targets onupdate script on Enter press
+		if(key == DOWNARROWTIPLEFT & !isundefined(my("target")),
+			eval(my("target"):"onupdate", value->my("value"));
+		);
+
+		// Remove last character if any on leftarrow press
+		if(key == LEFTARROW & length(value) > 0,
+			// Remove last char
+			value = value_(1..(length(value)-1)); // is list now :(
+
+			// Rebuild string from list
+			regional(temp);
+			temp = "";
+			forall(value, temp = temp + #);
+			value = temp;
+		);
+   if (key == SHIFTKEYARROW, 
+    o:"shift" = !my("shift");
+    o:"buildKeyboard";
+   );
+
+		// Reassign new value
+		self():"value" = value;
+		
+		// Execute targets onkeypress script
+		if(!isundefined(my("target")),
+			eval(my("target"):"onkeypress", key->key);
+		);
+		
+		key; // Return the key label
+	);
+
+	o:"draw" := (
+		forall(my("keys"), #:"draw");
+		
+		// debug
+		if('debuglevel > 0, draw(my("coord")));
+	);
+
+	// Build keyboard
+	// TODO: 
+  o:"buildKeyboard" :=(
+    o:"keys" = [];
+    if(o:"subtype" == "numeric",
+      coord = barCoord(0,0) +[21,-7];
+
+      keysize = 1.4*my("keysize");
+      // row 4
+      o:"keys" = o:"keys" :> new key(coord + [o:"margin", o:"margin"], keysize, "0");
+      o:"keys" = o:"keys" :> new key(coord + [2*o:"margin"+keysize, o:"margin"], keysize, ".");
+      o:"keys" = o:"keys" :> new key(coord + [3*o:"margin"+2*keysize, o:"margin"], keysize, LEFTARROW);
+      
+      // row 3
+      o:"keys" = o:"keys" :> new key(coord + [o:"margin", 2*o:"margin"+keysize], keysize, "1");
+      o:"keys" = o:"keys" :> new key(coord + [2*o:"margin"+keysize, 2*o:"margin"+keysize], keysize, "2");
+      o:"keys" = o:"keys" :> new key(coord + [3*o:"margin"+2*keysize, 2*o:"margin"+keysize], keysize, "3");
+
+      // row 2
+      o:"keys" = o:"keys" :> new key(coord + [o:"margin", 3*o:"margin"+2*keysize], keysize, "4");
+      o:"keys" = o:"keys" :> new key(coord + [2*o:"margin"+keysize, 3*o:"margin"+2*keysize], keysize, "5");
+      o:"keys" = o:"keys" :> new key(coord + [3*o:"margin"+2*keysize, 3*o:"margin"+2*keysize], keysize, "6");
+
+      // row 1
+      o:"keys" = o:"keys" :> new key(coord + [o:"margin", 4*o:"margin"+3*keysize], keysize, "7");
+      o:"keys" = o:"keys" :> new key(coord + [2*o:"margin"+keysize, 4*o:"margin"+3*keysize], keysize, "8");
+      o:"keys" = o:"keys" :> new key(coord + [3*o:"margin"+2*keysize, 4*o:"margin"+3*keysize], keysize, "9");
+
+      // Return key
+      o:"keys" = o:"keys" :> new key(coord + [4*o:"margin"+3*keysize, o:"margin"], keysize, 2*keysize + o:"margin", DOWNARROWTIPLEFT);
+    , // else 
+
+      if(o:"subtype" == "full",
+      // @incomplete: add symbol keys too? Not yet
+      // row 1 
+      regional(coord, letterkeys, case, keysize);
+      // coord = o:"coord";
+      // @refactor: promote to global settings variable  
+      coord = barCoord(0,0) +[28,-8.5];
+      
+      keysize = 1.4*my("keysize");
+      letterkeys = {
+        "q": {"lowercase":"q" ,"uppercase":"Q" },      
+        "w": {"lowercase":"w" ,"uppercase":"W" },
+        "e": {"lowercase":"e" ,"uppercase":"E" },
+        "r": {"lowercase":"r" ,"uppercase":"R" },
+        "t": {"lowercase":"t" ,"uppercase":"T" },
+        "z": {"lowercase":"z" ,"uppercase":"Z" },
+        "u": {"lowercase":"u" ,"uppercase":"U" },
+        "i": {"lowercase":"i" ,"uppercase":"I" },
+        "o": {"lowercase":"o" ,"uppercase":"O" },
+        "p": {"lowercase":"p" ,"uppercase":"P" },
+        "ü": {"lowercase":"ü" ,"uppercase":"Ü" },
+        "a": {"lowercase":"a" ,"uppercase":"A" },
+        "s": {"lowercase":"s" ,"uppercase":"S" },
+        "d": {"lowercase":"d" ,"uppercase":"D" },
+        "f": {"lowercase":"f" ,"uppercase":"F" },
+        "g": {"lowercase":"g" ,"uppercase":"G" },
+        "h": {"lowercase":"h" ,"uppercase":"H" },
+        "j": {"lowercase":"j" ,"uppercase":"J" },
+        "k": {"lowercase":"k" ,"uppercase":"K" },
+        "l": {"lowercase":"l" ,"uppercase":"L" },
+        "ö": {"lowercase":"ö" ,"uppercase":"Ö" },
+        "ä": {"lowercase":"ä" ,"uppercase":"Ä" },      
+        "y": {"lowercase":"y" ,"uppercase":"Y" },  
+        "x": {"lowercase":"x" ,"uppercase":"X" },
+        "c": {"lowercase":"c" ,"uppercase":"C" },
+        "v": {"lowercase":"v" ,"uppercase":"V" },
+        "b": {"lowercase":"b" ,"uppercase":"B" },
+        "n": {"lowercase":"n" ,"uppercase":"N" },
+        "m": {"lowercase":"m" ,"uppercase":"M" }
+      };
+      
+
+      case = if(my("shift"), "uppercase", "lowercase");
+
+      o:"keys" = o:"keys" :> new key(coord + [1*o:"margin"+ 0*keysize,  5*o:"margin"+4*keysize], keysize, "1");
+      o:"keys" = o:"keys" :> new key(coord + [2*o:"margin"+ 1*keysize,  5*o:"margin"+4*keysize], keysize, "2");
+      o:"keys" = o:"keys" :> new key(coord + [3*o:"margin"+ 2*keysize,  5*o:"margin"+4*keysize], keysize, "3");
+      o:"keys" = o:"keys" :> new key(coord + [4*o:"margin"+ 3*keysize,  5*o:"margin"+4*keysize], keysize, "4");
+      o:"keys" = o:"keys" :> new key(coord + [5*o:"margin"+ 4*keysize,  5*o:"margin"+4*keysize], keysize, "5");
+      o:"keys" = o:"keys" :> new key(coord + [6*o:"margin"+ 5*keysize,  5*o:"margin"+4*keysize], keysize, "6");
+      o:"keys" = o:"keys" :> new key(coord + [7*o:"margin"+ 6*keysize,  5*o:"margin"+4*keysize], keysize, "7");
+      o:"keys" = o:"keys" :> new key(coord + [8*o:"margin"+ 7*keysize,  5*o:"margin"+4*keysize], keysize, "8");
+      o:"keys" = o:"keys" :> new key(coord + [9*o:"margin"+ 8*keysize,  5*o:"margin"+4*keysize], keysize, "9");
+      o:"keys" = o:"keys" :> new key(coord + [10*o:"margin"+9*keysize,  5*o:"margin"+4*keysize], keysize, "0");
+      o:"keys" = o:"keys" :> new key(coord + [11*o:"margin"+10*keysize, 5*o:"margin"+4*keysize], keysize, "ß");
+      o:"keys" = o:"keys" :> new key(coord + [12*o:"margin"+11*keysize, 5*o:"margin"+4*keysize], keysize, LEFTARROW);
+
+      o:"keys" = o:"keys" :> new key(coord + [1*o:"margin",                 4*o:"margin"+3*keysize], keysize, letterkeys:"q":case);
+      o:"keys" = o:"keys" :> new key(coord + [2*o:"margin"+ 1*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"w":case);
+      o:"keys" = o:"keys" :> new key(coord + [3*o:"margin"+ 2*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"e":case);
+      o:"keys" = o:"keys" :> new key(coord + [4*o:"margin"+ 3*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"r":case);
+      o:"keys" = o:"keys" :> new key(coord + [5*o:"margin"+ 4*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"t":case);
+      o:"keys" = o:"keys" :> new key(coord + [6*o:"margin"+ 5*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"z":case);
+      o:"keys" = o:"keys" :> new key(coord + [7*o:"margin"+ 6*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"u":case);
+      o:"keys" = o:"keys" :> new key(coord + [8*o:"margin"+ 7*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"i":case);
+      o:"keys" = o:"keys" :> new key(coord + [9*o:"margin"+ 8*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"o":case);
+      o:"keys" = o:"keys" :> new key(coord + [10*o:"margin"+9*keysize,  4*o:"margin"+3*keysize], keysize, letterkeys:"p":case);
+      o:"keys" = o:"keys" :> new key(coord + [11*o:"margin"+10*keysize, 4*o:"margin"+3*keysize], keysize, letterkeys:"ü":case);
+      
+      o:"keys" = o:"keys" :> new key(coord + [1*o:"margin",                 3*o:"margin"+2*keysize], keysize, letterkeys:"a":case);
+      o:"keys" = o:"keys" :> new key(coord + [2*o:"margin"+ 1*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"s":case);
+      o:"keys" = o:"keys" :> new key(coord + [3*o:"margin"+ 2*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"d":case);
+      o:"keys" = o:"keys" :> new key(coord + [4*o:"margin"+ 3*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"f":case);
+      o:"keys" = o:"keys" :> new key(coord + [5*o:"margin"+ 4*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"g":case);
+      o:"keys" = o:"keys" :> new key(coord + [6*o:"margin"+ 5*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"h":case);
+      o:"keys" = o:"keys" :> new key(coord + [7*o:"margin"+ 6*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"j":case);
+      o:"keys" = o:"keys" :> new key(coord + [8*o:"margin"+ 7*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"k":case);
+      o:"keys" = o:"keys" :> new key(coord + [9*o:"margin"+ 8*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"l":case);
+      o:"keys" = o:"keys" :> new key(coord + [10*o:"margin"+9*keysize,  3*o:"margin"+2*keysize], keysize, letterkeys:"ö":case);
+      o:"keys" = o:"keys" :> new key(coord + [11*o:"margin"+10*keysize, 3*o:"margin"+2*keysize], keysize, letterkeys:"ä":case);
+
+
+      o:"keys" = o:"keys" :> new key(coord + [3*o:"margin"+ 2*keysize,  2*o:"margin"+1*keysize], keysize, letterkeys:"y":case);
+      o:"keys" = o:"keys" :> new key(coord + [4*o:"margin"+ 3*keysize,  2*o:"margin"+1*keysize], keysize, letterkeys:"x":case);
+      o:"keys" = o:"keys" :> new key(coord + [5*o:"margin"+ 4*keysize,  2*o:"margin"+1*keysize], keysize, letterkeys:"c":case);
+      o:"keys" = o:"keys" :> new key(coord + [6*o:"margin"+ 5*keysize,  2*o:"margin"+1*keysize], keysize, letterkeys:"v":case);
+      o:"keys" = o:"keys" :> new key(coord + [7*o:"margin"+ 6*keysize,  2*o:"margin"+1*keysize], keysize, letterkeys:"b":case);
+      o:"keys" = o:"keys" :> new key(coord + [8*o:"margin"+ 7*keysize,  2*o:"margin"+1*keysize], keysize, letterkeys:"n":case);
+      o:"keys" = o:"keys" :> new key(coord + [9*o:"margin"+ 8*keysize,  2*o:"margin"+1*keysize], keysize, letterkeys:"m":case);
+      
+      // Space key
+      o:"keys" = o:"keys" :> new key(coord + [4*o:"margin"+ 3*keysize, 1*o:"margin"+0*keysize], 5*keysize + 4*o:"margin", keysize , " ");
+      
+      // Return key
+      o:"keys" = o:"keys" :> new key(coord + [12*o:"margin"+11*keysize, 3*o:"margin" + 2*keysize], keysize, 2*keysize + o:"margin", DOWNARROWTIPLEFT);
+      
+      // Shift key
+      o:"keys" = o:"keys" :> new key(coord + [1*o:"margin"+ 0*keysize, 2*o:"margin"+1*keysize], 2*keysize + 1*o:"margin", keysize , SHIFTKEYARROW);
+
+      );
+
+      );
+  );
+  o:"buildKeyboard";
+	o; // Return Keyboard
+);
+
+;
+
+
+textBoxSize(text, fontsize, fontfamily) :=(
+		regional(box, boxwidth, boxheight);
+    box = getboundingbox(text, [0,0], fontsize, fontfamily);
+    boxwidth = box_2_1 - box_1_1;
+    boxheight = box_4_2 - box_1_2;
+    
+    {"w":boxwidth, "h":boxheight}
+    );
+
+
+
+//C: TextInput
+// v2
+// Recent changes:
+// - added fields "fontfamily" and "labelpadding" for more control when drawing Text Entry Box
+
+//@feature:  @@bgcolor_option@@
+new TextInput(coord, label, keyboardtype) := (
+	regional(o);
+	o = new VAMobject("textinput");
+	o:"coord" = coord;
+	o:"keyboardcoord" = coord;
+	o:"label" = label;
+	o:"width" = 2;
+	o:"height" = .6;
+	o:"value" = "";
+
+	o:"keyboardtype" = keyboardtype; // see Keyboard class
+	o:"keyboard" = nada;
+	o:"keyboardoffset" = [5,0];
+	o:"fontsize" = 14;
+	o:"fontfamily" = nada;
+	o:"labelpadding" = .2;
+
+	o:"isclickable" = true;
+	o:"ismoveable" = false;
+	
+	o:"hitbox" := rectangle(my("coord"), my("width"), my("height"));
+	o:"shape" := o:"hitbox";
+
+	o:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+  
+  o:"inactiveColor" = (245,233,196)/255;
+  o:"activeColor" = (171, 241, 182)/255;
+  o:"color"= (245,233,196)/255;
+   
+
+	o:"draw" := (
+    if(!isundefined(o:"drawBackground"), o:"drawBackground");
+		// Draw TextInput box
+		fillpoly(my("shape"), color->my("color"));
+		drawtext(
+			my("coord") + [0.2, 0.2],
+			my("value"),
+			color->grey(0),
+			size->my("fontsize")
+		);
+
+		// Draw label
+    
+    if (islist(my("label")),
+      
+      textbox = textBoxSize(my("label")_1, my("fontsize"), my("fontfamily"));
+      drawtextbox(
+        my("coord") - [textbox:"w"+my("labelpadding"), -.12],
+        my("label")_1,
+        my("fontsize"),
+        my("fontfamily"),
+        grey(1)
+	  	);
+      textbox = textBoxSize(my("label")_2, my("fontsize"), my("fontfamily"));
+      //@refactor: magic-number -0.5 as padding after the textinput field 
+      //=> make labelpadding a function argument
+      drawtextbox(
+        my("coord") + [textbox:"w"-0.5, .12],
+        my("label")_2,
+        my("fontsize"),
+        my("fontfamily"),
+        grey(1)
+	  	);
+    );
+
+    if (isstring(my("label")),
+      textbox = textBoxSize(my("label"), my("fontsize"), my("fontfamily"));
+      drawtextbox(
+        my("coord") - [textbox:"w"+my("labelpadding"), -.12],
+        my("label"),
+        my("fontsize"),
+        my("fontfamily"),
+        grey(1)
+	  	);
+    )
+
+	);
+
+	o:"setValue":= self():"value" = my("keyboard"):"value";
+
+	o:"click" := if(my("isclickable"),
+		if(!isundefined(my("keyboard")),
+      self():"color" = self():"inactiveColor";
+			obj = obj -- [my("keyboard")];
+			self():"keyboard" = nada;
+		,
+			self():"keyboard" = new Keyboard(my("keyboardcoord") + my("keyboardoffset"), my("keyboardtype"), 1, self());
+      self():"color" = self():"activeColor";
+			my("keyboard"):"value" = my("value");
+			obj = obj :> my("keyboard");
+		);
+	);
+
+	// Hooks from Keyboard class
+	// gets evaled with "key"
+	o:"onkeypress" := ( // set own value
+		self():"value" = value;
+	);
+
+	// gets evaled with "value"
+	o:"onupdate" := (	// Destroy keyboard
+		self():"keyboard" = nada;
+	);
+
+	o;
+);
+
+;
+//C: ProgressCircle
+// v1
+new ProgressCircle(center, innersize, outersize, value, maxvalue) := (
+	regional(obj);
+	obj = new VAMobject("ProgressCircle");
+	
+	// Basic fields
+	obj:"coord" = center;
+	obj:"innerradius" = if(innersize==nada, 2, innersize)/2;
+	obj:"outerradius" = if(outersize==nada, 3, outersize)/2;
+	obj:"value" = if(value==nada, 42, value);
+	obj:"maxvalue" = if(maxvalue==nada, 100, maxvalue);
+	
+	// Text toggles for direct access
+	obj:"fontfamily" = nada;
+	obj:"fontsize" = 24;
+	obj:"textoffset" = 3.6;
+
+	// Shape of the outer circular sector
+	obj:"shape" := (
+		regional(center, radius, circle, boundingpoly, refpoint, angle);
+		
+		// Build base circle
+		center = my("coord");
+		radius = my("outerradius");
+		circle = circle(center, radius);
+
+		// Get point on the circle with respect to current value
+		angle = -2 * PI * my("value") / my("maxvalue");
+		refpoint = rotate(
+			center+[0,radius],
+			angle, 
+			center
+		);
+		
+		// Build bounding poly to subtract from circle
+		angle = abs(angle);
+		boundingpoly = [
+			center, // start at center of ProgressCircle
+			center + [0, radius], // go up to edge
+			center + [-radius, radius], // go to top left corner
+			if(angle < 3/2 * PI,
+				// also go to lower left corner if refpoint in Q3
+				center + [-radius, -radius]
+			),
+			if(angle < PI,
+				// also go to lower right corner if refpoint in Q4
+				center + [radius, -radius]
+			),
+			if(angle < 1/2 * PI,
+				// also go to top right corner if refpoint in Q1
+				center + [radius, radius]
+			),
+			refpoint // go to refpoint
+		];
+
+		// Fix for CindyJS not ignoring nada Points
+		boundingpoly = select(boundingpoly,!isundefined(#)); 
+
+		circle -- polygon(boundingpoly); // Return shape.
+	);
+
+	// Look of the outer circle
+	obj:"outercolor" := [
+		min(0.8, 1 - my("value") / my("maxvalue")),
+		min(0.9, my("value") / my("maxvalue")),
+		0
+	];
+	obj:"outerborder" := [0,0,0];
+	obj:"outerstroke" := 0;
+	// Look of the inner circle
+	obj:"innercolor" := [0.94,0.94,0.94];
+	obj:"innerborder" := [0,0,0];
+	obj:"innerstroke" := 0;
+
+	obj:"draw" := (
+
+		// Draw outer circluar sector
+		fill(
+			my("shape"),
+			color -> my("outercolor")
+		);
+		draw(
+			my("shape"),
+			color -> my("outerborder"),
+			size -> my("outerstroke")
+		);
+
+		// Draw inner circle
+		drawcircle(
+			my("coord"), 
+			my("innerradius"),
+			color -> my("innerborder"),
+			size -> my("innerstroke")
+		);
+		fillcircle(
+			my("coord"), 
+			my("innerradius"),
+			color -> my("innercolor")
+		
+		);
+		
+		// Draw text
+		drawtext(
+			my("coord") + [0,-my("innerradius")/my("textoffset")], 
+			my("value"),
+			size -> my("fontsize"),
+			family -> my("fontfamily"), 
+			align -> "center"
+		);
+	);
+
+	obj; // Return ProgressCircle
+);
+
+;
+//C: ScrollBar
+// v3
+// Recent Changes:
+// - dont call "script" on "moveend", becaus gets called with old value.
+// - call on "click" instead
+// - code documentation
+
+new HorizontalScrollbar(coord, width) := (
+	regional(obj);
+	obj = new VAMobject("Scrollbar");
+
+	obj:"coord" = coord;
+	obj:"width" = width;
+	obj:"height" = 1;
+	obj:"padding" = .2;
+	obj:"ismoveable" = true;
+	obj:"isclickable" = true;
+	obj:"hasbuttons" = true;
+	obj:"callonmove" = true; // Call Scrollbars script continously on move (true) or once at moveend?
+	obj:"moveonclick" = true; // Move bar when clicking on background of Scrollbar
+	obj:"precision" = .05; // amount that bar gets moved by, if button is pressed
+
+	obj:"min" = 0; // Value, if bar is furthest to the left
+	obj:"max" = 1; // Value, if bar is furthest to the right
+	obj:"value" := ( // current value of Scrollbar depending on position
+		regional(currX, minX, maxX);
+		currX = my("bar"):"coord"_1;
+		minX = my("coord")_1 + my("padding") + if(my("hasbuttons"), my("height"), 0);
+		maxX = my("coord")_1 + my("width") - my("padding") - if(my("hasbuttons"), my("height"), 0);
+		maxX = maxX - my("bar"):"width";
+		my("min") + (my("max")-my("min")) * (currX-minX) / (maxX-minX);
+	);
+
+	obj:"shape" := rectangle(my("coord"), my("width"), my("height"));
+	obj:"hitbox" := my("shape");
+
+	// Button for moving the bar to the left
+	obj:"left" = (
+		regional(btn);
+		btn = new Button(obj:"coord",obj:"height",obj:"height","◀",18*obj:"height");
+		btn:"parent" = obj;
+		btn:"fontcolor" = grey(1);
+		btn:"color" = grey(0.8);
+		btn:"cornerradius" = 0;
+		btn:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+		btn:"script" := ( // Moves button to the left
+			regional(sb,minX, maxX, barX);
+			sb = my("parent"); // Scrollbar parent
+
+			barX = sb:"bar":"coord"_1; // bars (as in the rectangle of the ScrollBar object) current coord
+
+			minX = sb:"coord"_1 + sb:"padding" + if(sb:"hasbuttons", sb:"height", 0); // leftmost point where to put the bar
+			maxX = sb:"coord"_1 + sb:"width" - sb:"padding" - if(sb:"hasbuttons", sb:"height", 0); // rightmost point
+			maxX = maxX - sb:"bar":"width"; // subtract bar with to get bottom left corner
+
+			barX = sb:"bar":"coord"_1 - sb:"precision" * (maxX-minX); // Decrement coord by multiple of length of space
+			barX = max(barX,minX); // Recognize left border
+
+			sb:"bar":"coord"_1 = barX; // Set value
+		);		
+
+		btn;
+	);
+
+	// Button for moving the bar to the right
+	obj:"right" = (
+		regional(btn, pos);
+		pos = obj:"coord" + [obj:"width"-obj:"height",0];
+		btn = new Button(pos,obj:"height",obj:"height"," ▶",18*obj:"height");
+		btn:"parent" = obj;
+		btn:"fontcolor" = grey(1);
+		btn:"color" = grey(0.8);
+		btn:"cornerradius" = 0;
+		btn:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+		btn:"script" := ( // Moves button to the right
+			regional(sb,minX, maxX, barX);
+			sb = my("parent"); // Scrollbar parent
+
+			barX = sb:"bar":"coord"_1; // bars (as in the rectangle of the ScrollBar object) current coord
+
+			minX = sb:"coord"_1 + sb:"padding" + if(sb:"hasbuttons", sb:"height", 0); // leftmost point where to put the bar
+			maxX = sb:"coord"_1 + sb:"width" - sb:"padding" - if(sb:"hasbuttons", sb:"height", 0); // rightmost point
+			maxX = maxX - sb:"bar":"width"; // subtract bar with to get bottom left corner
+
+			barX = sb:"bar":"coord"_1 + sb:"precision" * (maxX-minX); // Decrement coord by multiple of length of space
+			barX = min(barX,maxX); // Recognize left border
+
+			sb:"bar":"coord"_1 = barX; // Set value
+		);	
+
+		btn;
+	);
+	obj:"bar" = (
+		regional(bar);
+		bar = new VAMobject("bar");
+		bar:"parent" = obj;
+		bar:"ismoveable" := my("parent"):"ismoveable";
+		bar:"padding" := my("parent"):"padding";
+		bar:"height" := my("parent"):"height" - 2 * my("padding");
+		bar:"width" := .5 * (my("parent"):"width" - 2 * my("parent"):"height");
+		bar:"coord" = bar:"parent":"coord" + 
+			if(bar:"parent":"hasbuttons",[bar:"parent":"height", 0], [0,0]) +
+			[bar:"padding", bar:"padding"];
+
+		bar:"shape" := rectangle(my("coord"),my("width"),my("height"));
+		bar:"hitbox" := my("shape");
+		bar:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+
+		bar:"draw" := fillpoly(my("shape"), color->grey(.8));
+
+		bar;
+	);
+
+	obj:"draw" := (
+		fillpoly(my("shape"), color->grey(.95));
+		if(my("hasbuttons"),
+			my("left"):"draw";
+			my("right"):"draw";
+		);
+		my("bar"):"draw";
+
+		// Debug draw
+		if('debuglevel > 0, draw(my("coord")));
+		if('debuglevel > 0, drawtext(my("bar"):"coord"+[.1,.1],my("value")));
+		if('debuglevel > 1, draw(my("bar"):"coord",color->[0,0,1]));
+	);
+
+	obj:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+	obj:"move" := if(my("ismoveable") & my("bar"):"ishot",
+		// Move bar
+		my("bar"):"coord" = my("bar"):"coord" + [mousedelta_1,0];
+
+		// Constrain movement to the left
+		regional(borderX);
+		borderX =	my("coord")_1 + my("padding") + if(my("hasbuttons"), my("height"), 0);
+		if(my("bar"):"coord"_1 < borderX,
+				my("bar"):"coord"_1 = borderX;
+		);
+
+		// Constrain movement to the right
+		borderX =  my("coord")_1 + my("width") - my("padding") - if(my("hasbuttons"), my("height"), 0);
+		borderX = borderX - my("bar"):"width";
+		if(my("bar"):"coord"_1 > borderX,
+				my("bar"):"coord"_1 = borderX;
+		);
+
+		// Call Scrollbar script
+		if(my("callonmove"), my("script"));
+	);
+
+//	obj:"moveend" := my("script"); // calls "script" with old value. Why?
+
+	obj:"click" := (
+		// Trigger left button action
+		if(my("left"):"ishot" & my("hasbuttons"),
+			my("left"):"click";
+		);
+		
+		// Trigger right button action
+		if(my("right"):"ishot" & my("hasbuttons"),
+			my("right"):"click"
+		);
+
+		if(!my("left"):"ishot" & !my("right"):"ishot" & !my("bar"):"ishot" & my("moveonclick"),
+			regional(minX, maxX);
+			minX =	my("coord")_1 + my("padding") + if(my("hasbuttons"), my("height"), 0);
+			maxX =  my("coord")_1 + my("width") - my("padding") - if(my("hasbuttons"), my("height"), 0);
+			maxX = maxX - my("bar"):"width";
+			my("bar"):"coord"_1 = mouse().xy_1;
+			my("bar"):"coord"_1 = max(my("bar"):"coord"_1, minX);
+			my("bar"):"coord"_1 = min(my("bar"):"coord"_1, maxX);
+		);
+
+		// Run script
+		my("script");
+	);
+
+	obj:"script" := println("Implement obj:script || my(value) = " + my("value"));
+
+	obj; // Return Scrollbar;
+);
+
+// ###################
+// PERCENTAGEBAR:START
+// ###################
+
+// @refactor: change the decimal separator in displayed numbers from . to ,
+
+
+//VAM: percentagebar
+// v1
+
+// A | Documentation
+//'doctextpos = [9,2.5];
+'doc = "
+	...
+";
+
+// B | Divomath config
+// ===================
+
+ 
+// function to transform complex number to 2Dvector    
+c2v(z):= (
+  [re(z), im(z)]    
+); 
+
+
+regional(item);
+
+// Configure precision of the bars drag action
+barprecision = defaultstateto("barprecision", 1);
+barprecision = barprecision / 100; // Adjust to not be expressed as y%
+
+barwidth = defaultstateto("barwidth", 16); // initial width of bar
+barheight = defaultstateto("barheight", 2); // height of bar
+
+barvalue = defaultstateto("barvalue", 0); // initial bar value in [0,1]
+basevalue = defaultstateto("basevalue", 1000); // bars initial base value
+
+subdivisions = defaultstateto("subdivisions", 3); // initial number of subdivisions
+unit = defaultstateto("unit", ""); // displayed unit for values
+
+
+//@incomplete: documentation for variables used in the dual-numberline
+upperUnit = defaultstateto("upperUnit", ""); // displayed unit for values on the opper numberline
+lowerUnit = defaultstateto("lowerUnit", ""); // displayed unit for values on the lower numberline
+
+//@refactor: naming convention
+incUpperSizeSteps   = defaultstateto("incUpperSizeSteps", ""); 
+incLowerSizeSteps   = defaultstateto("incLowerSizeSteps", ""); 
+incGivenValue       = defaultstateto("incGivenValue", ""); 
+decUpperTargetValue = defaultstateto("decUpperTargetValue", "");
+decLowerTargetValue = defaultstateto("decLowerTargetValue", "");
+incUpperValueMark1   = defaultstateto("decUpperValueMark1", ""); 
+incLowerValueMark1   = defaultstateto("decLowerValueMark1", ""); 
+incUpperValueMark2   = defaultstateto("decUpperValueMark2", ""); 
+incLowerValueMark2   = defaultstateto("decLowerValueMark2", ""); 
+incUpperValueMark3   = defaultstateto("decUpperValueMark3", ""); 
+incLowerValueMark3   = defaultstateto("decLowerValueMark3", ""); 
+incUpperValueMark4   = defaultstateto("decUpperValueMark4", ""); 
+incLowerValueMark4   = defaultstateto("decLowerValueMark4", ""); 
+incUpperValueMark5   = defaultstateto("decUpperValueMark5", ""); 
+incLowerValueMark5   = defaultstateto("decLowerValueMark5", ""); 
+decNumberSteps      = defaultstateto("decNumberSteps", "");
+decUpperStepSize    = defaultstateto("decUpperStepSize", "");
+decLowerStepSize    = defaultstateto("decLowerStepSize", "");
+decUpperValueMark   = defaultstateto("decUpperValueMark", "");
+decLowerValueMark   = defaultstateto("decLowerValueMark", "");
+decUpperValueMark1   = defaultstateto("decUpperValueMark1", "");
+decLowerValueMark1   = defaultstateto("decLowerValueMark1", "");
+decUpperValueMark2   = defaultstateto("decUpperValueMark2", "");
+decLowerValueMark2   = defaultstateto("decLowerValueMark2", "");
+decUpperValueMark3   = defaultstateto("decUpperValueMark3", "");
+decLowerValueMark3   = defaultstateto("decLowerValueMark3", "");
+decUpperValueMark4   = defaultstateto("decUpperValueMark4", "");
+decLowerValueMark4   = defaultstateto("decLowerValueMark4", "");
+decUpperValueMark5   = defaultstateto("decUpperValueMark5", "");
+decLowerValueMark5   = defaultstateto("decLowerValueMark5", "");
+
+
+leftoutpercentages = defaultstateto("leftoutpercenteges", []);
+leftoutvalues = defaultstateto("leftoutvalues", []);
+custompercentages = defaultstateto("custompercentages", []);
+customvalues = defaultstateto("customvalues", []);
+
+// Configure look and feel of things
+barcolor = defaultstateto("barcolor", DZLMCOLORBLUE); // Percentagebar
+archcolor = defaultstateto("archcolor", DZLMCOLORGOLD); // Arches
+fontfamily = defaultstateto("fontfamily", nada); // Font
+isbardraggable = defaultstateto("isbardraggable", true);
+
+// Configure scaffolds
+scaffoldvalue = defaultstateto("scaffoldvalue", false);
+scaffoldpercentage = defaultstateto("scaffoldpercentage", false);
+scaffoldbasevalue = defaultstateto("scaffoldbasevalue", false);
+
+
+
+
+// Percentagebar
+// Main functionality of a bar, that is draggable in a certain area. Provides labels for different values
+new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit) := (
+	regional(o);
+	o = new VAMobject("Percentagebar");
+	
+	// Look and feel
+	o:"coord" = coord;
+	o:"color" = barcolor;
+	o:"width" = width;
+	o:"height" = height;
+	o:"margin" = 0; // margin of bar shape to surrounding box
+	o:"precision" = precision; // precision of movement of bar (in [0,1])
+	o:"fontsize" = 14;
+	o:"fontfamily" = fontfamily; // set globally
+	o:"labelpadding" = .55;
+	o:"isclickable" = isbardraggable;
+	o:"ismoveable" = isbardraggable;
+
+	// Booleans for showing/hiding stuff, set manually after init
+  // @refactor: do we need two different variables? If yes we need two different switches as well!
+  o:"drawUpperNumberlineLabels" = nada;
+	o:"drawLowerNumberlineLabels" = nada;
+	o:"drawbasevaluelabel" = nada;
+	o:"drawcurrentpercentage" = nada;
+	o:"drawcurrentvalue" = nada;
+	o:"drawarches" = nada;
+  o:"arcsLabels" = nada;
+  o:"totalArcLabel" = nada;
+
+	o:"canoverflow" = nada;
+	o:"scaffoldvalue" = scaffoldvalue;
+	o:"scaffoldpercentage" = scaffoldpercentage;
+	o:"scaffoldbasevalue" = scaffoldbasevalue;
+
+	// Handles for interface (textfields, buttons, toggles)
+	o:"toggles" = nada; // set at init
+	o:"textfields" = nada; // set at init
+	o:"buttons" = nada; // set at init
+
+	// Values for Percentagebar
+	o:"unit" = unit;
+	o:"value" = value; // between 0 and 1
+  o:"units" = {"lower": nada, "upper": nada};
+	o:"basevalue" = baseval;
+  // @temporary: default values
+  o:"givenValue" = nada;
+  // The given Value gets rounded up to the next integer multiple of the stepsize
+  o:"maxGivenValue" := (floor(my("givenValue")/my("sizeSteps"):(my("givenUnit"))) + 2)*my("sizeSteps"):(my("givenUnit"));
+  // @missing: Function to convert from Unit name e.g. "Kilometer" to "upper" or "lower",
+  // depending on the numberline with the given unit
+  o:"givenUnit" = nada;
+  o:"dependentUnit":nada;
+  // @temporary: default values
+  // @incomplete: prevent step to be bigger than the maximum "givenValue"
+  // mark textfields red maybe?
+  o:"sizeSteps" = { "lower": nada, "upper": nada};
+  o:"divisions" := my("maxGivenValue")/(my("sizeSteps"):(my("givenUnit")));
+  //println(my("divisions"));
+  // determines ticks, gets updated via Textfield
+	o:"ticks" := apply(1..(my("divisions")), #/my("divisions"));
+  o:"dependentValue" := my("divisions")* my("sizeSteps"):(my("dependentUnit")) ;
+  o:"maxDependentValue" := my("divisions")* my("sizeSteps"):(my("dependentUnit")) ;
+  // @missing
+  //o:"markedTicks"
+    o:"ticksDistance" := (
+    regional(adjacentTicks);
+    adjacentTicks = my("ticks")_([2,1])*my("width");
+    adjacentTicks_1 - adjacentTicks_2;
+    );
+   
+  o:"tickLabelSizeLimits" :=(
+    regional(width, height, allTickLabels);
+    
+    allTickLabels = bar:"ticks"*bar:"maxGivenValue" ++ bar:"ticks"*bar:"maxDependentValue";
+    widths = 
+        apply(allTickLabels,
+          textBoxSize(# + "", my("family"), my("size")):"w"
+      );
+    heights = 
+        apply(allTickLabels,
+          textBoxSize(# + "", my("family"), my("size")):"h"
+      );
+
+    {
+    "min": {"w": min(widths), "h": min(heights)},
+    "max": {"w": max(widths), "h": max(heights)}
+    };
+  );
+  o:"isTicksDistanceEnough" := ( my("ticksDistance") - my("tickLabelSizeLimits"):"max":"w" ) > 1.25*my("labelDigitWidth");
+
+
+  o:"labelDigitWidths" = apply(0..9, textBoxSize(#, bar:"size", bar:"family"):"w");
+  if(!and(apply(my("labelDigitWidths"), # == my("labelDigitWidths")_1)),
+    println("Warningn: The widths of digits is not the same in the chosen font!");
+    println("The width of the digit '0' is chosen by default");
+  );
+  o:"labelDigitWidth" = o:"labelDigitWidths"_1;
+
+	o:"standardticks" = [0];
+
+
+
+
+	// Shape & hitbox
+	o:"box" = rectangle(coord-[o:"margin",o:"margin"], width+2*o:"margin", height+2*o:"margin");
+	o:"shapeUpper" := roundedrectangle([my("coord").x, my("coord").y+my("height")*0.9], my("value")*my("width"), my("height")*0.1, .1);
+	o:"shapeLower" := roundedrectangle(my("coord"), my("value")*my("width"), my("height")*0.1, .1);
+  o:"shapeFrontEdge" := [[my("value")*my("width"), my("coord")_2 - 0.25 ] , 
+                         [my("value")*my("width"), my("coord")_2 + my("height") + 0.25]];
+	o:"hitbox" := rectangle(my("coord"),2*my("width"),my("height"));
+
+	o:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+  
+  o:"handleGivenValueTick" :=(
+
+    if(and(!isundefined(my("maxGivenValue")),
+           (contains(["lower", "upper"],
+                     my("givenUnit"))
+           )
+          ),
+    o:"standardticks" = [0,my("givenValue")/my("maxGivenValue"),1];
+  , //else
+
+    o:"standardticks" = [0];
+  );  
+
+    );
+
+	o:"draw" := (
+		// Draw background box
+		fillpoly(my("box"), color->gray(1));
+    
+
+    // upper and lower numberline with arrow heads
+    gsave();
+    linesize(2);
+    upperEnd = [my("coord").x + my("width")+0.5, my("coord").y + my("height")];
+    draw([[my("coord").x - 0.25, my("coord").y + my("height")],
+          upperEnd],
+           color->gray(0));
+
+    draw([upperEnd,
+          upperEnd + c2v(0.25*exp(i*PI*155/180))],
+         color->gray(0));
+    draw([upperEnd,
+          upperEnd + c2v(0.25*exp(i*PI*205/180))],
+         color->gray(0));
+
+    lowerEnd = [my("coord").x + my("width")+0.5, my("coord").y];
+    draw([[my("coord").x - 0.25, my("coord").y],
+         lowerEnd], 
+          color->gray(0));
+    
+    lowerEnd = [my("coord").x + my("width")+0.5, my("coord").y];
+
+    draw([lowerEnd,
+          lowerEnd + c2v(0.25*exp(i*PI*155/180))],
+         color->gray(0));
+    draw([lowerEnd,
+          lowerEnd + c2v(0.25*exp(i*PI*205/180))],
+         color->gray(0));
+    grestore(); //end linesize 2
+
+		// Draw actual draggable bar
+		fill(my("shapeUpper"), color->my("color"));
+		fill(my("shapeLower"), color->my("color"));
+    // to be drawn on top of the ticks this has to frontedge has to be drawn later
+
+		// Draw inbetween ticks
+		regional(p1); // anchor point for vertical lines
+   
+    // @refactor: magic-number 0.25 'overshoot' of ticks
+    // @improvement: vary size like on a ruler?
+    regional(overshoot);
+    overshoot = 0.25;
+		forall(my("ticks"),
+      if(# < my("value")+0.001,
+
+        p1 = my("coord") + [#,0]*my("width") - [0, overshoot]; // Set bottom point for tick
+        draw( // draw vertical line segment
+          p1, p1 + [0,my("height") + 2*overshoot],
+          size->2,
+          color->gray(0);
+        ); 
+      );
+    );
+
+		// Draw standard ticks (left and right by default)
+    o:"handleGivenValueTick";
+		forall(my("standardticks"),
+			p1 = my("coord") + [#,0]*my("width") - [0, 0.4]; ; // Set bottom point for tick
+			draw( // draw vertical line segment
+				p1, p1 + [0,my("height") + 2*0.4],
+				size->2,
+				color->grey(.3)
+			); 
+		);
+    //@refactor: there has to be a better way to do this instead of this if/else 
+    regional(maxValueKey,maxValueKeyOther,loopCounter);
+
+		// Draw custompercentages & customvalues
+      if(my("givenUnit") == "upper",
+        maxValueKey = "maxGivenValue";
+        maxValueKeyOther = "maxDependentValue"
+    ,//else
+        maxValueKey = "maxDependentValue";
+        maxValueKeyOther = "maxGivenValue";
+      ); 
+    
+    loopCounter = 0;
+    //@refactor: make the tick symetrical about the respective numberline,
+    // currently it the fraction inside of the numberlines higher
+		forall(custompercentages,
+      loopCounter = loopCounter + 1;
+      regional(start);
+      deltaY = 2*0.4; //+ my("height")/3;
+      if(length(customvalues) >= loopCounter,
+      if( |#/my(maxValueKey) - (customvalues_(loopCounter))/my(maxValueKeyOther)| < 0.0001,
+        deltaY = 0.4 + my("height")/2;
+      );
+      );
+			p1 = my("coord") + [#/my(maxValueKey)*my("width"), my("height")]+ [0, 0.4]; // Set bottom point for tick
+			draw( // draw vertical line segment
+				p1, p1 - [0, deltaY],
+				size->2,
+				color->valueMarkColors_loopCounter;
+			); 
+		);
+
+
+      
+      if(my("givenUnit") == "lower",
+        maxValueKey = "maxGivenValue";
+        maxValueKeyOther = "maxDependentValue";
+    ,//else
+        maxValueKey = "maxDependentValue";
+        maxValueKeyOther = "maxGivenValue";
+      ); 
+
+    loopCounter = 0;
+    //@refactor: make the tick symetrical about the respective numberline,
+    // currently it the fraction inside of the numberlines higher
+		forall(customvalues,
+      loopCounter = loopCounter + 1;
+      regional(deltaY);
+      deltaY = 2*0.4; //+ my("height")/3;
+        
+    if(length(custompercentages) >= loopCounter,
+      if(|#/my(maxValueKey) - (custompercentages_(loopCounter))/my(maxValueKeyOther)| < 0.0001,
+        deltaY = 0.4 + my("height")/2;
+      );
+    );
+			p1 = my("coord") + [#/my(maxValueKey),0]*my("width") + [0, -0.4]; // Set bottom point for tick
+			draw( // draw vertical line segment
+				p1, p1 + [0,deltaY],
+				size->2,
+				color->valueMarkColors_loopCounter;
+			); 
+		);
+  
+    gsave();
+    linesize(2);
+    draw(my("shapeFrontEdge"), color->my("color"), size->1.4);
+    grestore();
+
+
+		// Draw labels for percentages and corresponding values
+		regional(size, font, label, text, box, position, xoffset, yoffset);
+		size = my("fontsize");
+		family = my("fontfamily");
+      
+
+    // @improvement: rotate the labels, if they get to close to each other
+    // use textBoxSize to get the width of two center labels and calculate if
+    // they overlap
+
+
+      if(my("givenUnit") == "upper",
+        maxValueKey = "maxGivenValue",
+        maxValueKey = "maxDependentValue"
+      ); 
+
+
+			yoffset = my("height")+my("labelpadding"); // move up by the height of the bar
+
+      o:"handleGivenValueTick";
+      forall(my("standardticks") -- [1],
+        // @refactor: copy-paste: move to function
+				text = if(# == 0, 
+                  "0"
+                  , // else: # > 0 
+                  if(maxValueKey == "maxGivenValue",
+                  #*my(maxValueKey)
+                  , //else: maxValueKey == "dependentValue" is not labeled
+                  ""
+        );
+        ); 
+				box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+				xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+				position = my("coord") + [xoffset, yoffset]; // actual position
+				// Draw arches
+
+				if(my("drawarches"), eval(my("drawpercentagearches"), yoffset->yoffset+box_4_2-box_1_2));
+			  if(my("drawTotalArc"), eval(my("drawpercentagearches"), yoffset->yoffset+box_4_2-box_1_2, isTotalArc->true));
+
+				// Draw labels
+				drawtext(position, text, size->size, font->family, color->grey(.5));
+
+      );
+		if(my("drawUpperNumberlineLabels"),
+    
+			forall(my("ticks")--[1],
+				if(# < (my("value") + 0.001),
+				text = #*my(maxValueKey); // tick value in % rounded to 1 decimal with "%" sign
+				box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+				xoffset = #*my("width");// - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+				position = my("coord") + [xoffset, yoffset]; // actual position
+        
+        regional(labelSize,angle,alignment,scale);
+
+
+        labelSize = textBoxSize(text, size, family);
+
+        if(my("isTicksDistanceEnough"),
+
+        //position = position + [my("tickLabelSizeLimits"):"max":"w" - labelSize:"w", 0];
+        angle = 0°;
+        currentsize = size;
+        alignment = "center";
+
+
+,//else: labels are to close to each other
+          angle = 90°;
+          //@refactor: this magic formula works-for-now™ but is not perfect
+          position1 = position;
+          if(my("tickLabelSizeLimits"):"max":"h" > my("ticksDistance") - 0.25,
+            currentsize = floor(size*0.9);
+          );
+          position = position + [labelSize:"h"/2,my("tickLabelSizeLimits"):"min":"w"+0.35];
+          alignment = "right"; 
+          translation = [labelSize:"w"/2, labelSize:"h"/2];
+      );
+
+
+			// Draw labels
+				//drawtext(position, text, size->size, font->family, color->grey(.5));
+					drawtext(position, text, size->currentsize, font->family, color->gray(.5), angle->angle, align->alignment);
+				);
+			);
+	);
+
+  // @refactor: change 'percentages' suffix to 'upper'
+	// Draw labels for custom percenteges
+  
+	yoffset = my("height")+my("labelpadding"); // move up by the height of the bar
+
+  loopCounter = 0;
+	forall(custompercentages,
+      loopCounter = loopCounter + 1;
+			text = # + ""; 
+			box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+			xoffset = #/my(maxValueKey) * my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+			position = my("coord") + [xoffset, yoffset]; // actual position
+
+			// Draw labels
+			drawtext(position, text, size->size, font->family, 
+      color->valueMarkColors_loopCounter
+    );
+	 
+	);
+
+
+
+
+//		// Draw value labels
+//      
+//
+      if(my("givenUnit") == "lower",
+        maxValueKey = "maxGivenValue",
+        maxValueKey = "maxDependentValue"
+      ); 
+
+      o:"handleGivenValueTick";
+      forall(my("standardticks") -- [1],
+        // @refactor: copy-paste: move to function
+				text = if(# == 0, 
+                  "0"
+                  , // else: # > 0 
+                  if(maxValueKey == "maxGivenValue",
+                  #*my(maxValueKey)
+                  , //else: maxValueKey == "dependentValue" is not labeled
+                  ""
+        );
+        ); 
+				box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+				xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+				yoffset = -(box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+				position = my("coord") + [xoffset, yoffset]; // actual position
+
+				// Draw arches
+				//if(my("drawarches"), eval(my("drawpercentagearches"), yoffset->yoffset+box_4_2-box_1_2));
+
+				// Draw labels
+				drawtext(position, text, size->size, font->family, color->grey(.5));
+
+      );
+
+
+				// Draw arches
+			if(my("drawarches"), eval(my("drawvaluearches"), yoffset->yoffset- 0*my("labelpadding")));
+			if(my("drawTotalArc"), eval(my("drawvaluearches"), yoffset->yoffset- 0*my("labelpadding"), isTotalArc->true));
+    
+		if(my("drawLowerNumberlineLabels"),
+			forall(my("ticks")--[1],
+				if(# < my("value") + 0.001,
+				text =  #*my(maxValueKey) + ""; // altered tick value with unit
+				box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+				xoffset = #*my("width");// - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+				yoffset = -(box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+				position = my("coord") + [xoffset, yoffset]; // actual position
+
+
+				// Draw
+
+        regional(labelSize,angle,alignment);
+        labelSize = textBoxSize(text, size, family);
+        
+          if(my("isTicksDistanceEnough"), // labels are far enough away from each other
+        // to align the numbers by place value, shift by half the difference to the maximum width
+        // example:  1234       1234
+        //                  => 
+        //            23          23 
+
+        //position = position + [my("tickLabelSizeLimits"):"max":"w" - labelSize:"w", 0];
+        angle = 0°;
+        currentsize = size;
+        alignment = "center";
+        // for debugging 
+        //position1 = [-80,0];
+
+    ,//else:  labels ar to close to each other
+          angle = 90°;
+          // for debugging: compare to the first branch of this conditional
+          //position1 = position + ["tickLabelSizeLimits"):"max":"w" - labelSize:"w", 0];
+
+          if(my("tickLabelSizeLimits"):"max":"h" > my("ticksDistance") - 0.25,
+            currentsize = floor(size*0.9);
+          );
+          position = position + [labelSize:"h"/2, 1-1.5*my("labelDigitWidth")];
+          alignment = "right"; 
+          translation = [labelSize:"w"/2, labelSize:"h"/2];
+
+        
+
+        );
+				if(# != 1, // exclude drawing of base value label
+        // for debugging 
+        // fillcircle(position, 0.125, color->[1,0,1]);
+        // drawcircle(position1, 0.125, color->[0,1,0]);
+				// drawtext(position1, text, size->size, font->family, color->[1,0.5,0.1], align->"center");
+					drawtext(position, text, size->currentsize, font->family, color->gray(.5), angle->angle, align->alignment);
+					);
+				);
+			);
+		);
+		
+    // Draw labels for  custom values
+    // @refactor: change 'values' suffix to 'lower'
+    loopCounter = 0;
+		forall(customvalues,
+        loopCounter = loopCounter + 1;
+				text =  #+ ""; // altered tick value with unit
+				box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+				xoffset = #/my(maxValueKey)*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+				yoffset = -(box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+				position = my("coord") + [xoffset, yoffset]; // actual position
+
+			// Draw
+			drawtext(position, text, size->size, font->family, 
+      //color->grey(.5)
+      color->valueMarkColors_loopCounter
+    );
+		
+		);
+
+
+//		// Draw basevalue label
+//		if(my("drawbasevaluelabel"),
+//			text = round(my("basevalue")*100)/100 + " " + my("unit"); // altered tick value with unit
+//			box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+//			xoffset = my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+//			yoffset = -(box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+//			position = my("coord") + [xoffset, yoffset]; // actual position
+//			
+//			// Draw
+//			drawtext(position, text, size->size, font->family, color->grey(.5));
+//
+//			// Draw scaffold overlay for base value
+//			if(my("scaffoldbasevalue"),
+//				regional(scaffoldbox);
+//				scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+//				draw(scaffoldbox, color -> grey(.5));
+//				fill(scaffoldbox, color -> grey(.9));
+//			);
+//		);
+//		
+
+
+
+		// Draw labels for current percentage
+		if(my("drawcurrentpercentage"),
+			text = round(my("value")*1000)/10 + " %"; // current value in % rounded to 1 decimal with "%" sign
+			box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+			position = my("coord") + [ // actual position, start at bar coord
+				my("value")*my("width") - .5*(box_2_1-box_1_1), // move to vertical line and adjust by half the texts length
+				my("height")+my("labelpadding") // move up by the height of the bar
+			];
+
+			// Draw
+			drawtextbox(position, text, nada, nada, grey(1), bold->true);
+
+			// Draw scaffold overlay for percentage
+			if(my("scaffoldpercentage"),
+				regional(scaffoldbox);
+				scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+				draw(scaffoldbox, color -> grey(.5));
+				fill(scaffoldbox, color -> grey(.9));
+			);
+		);
+
+		// Draw current value
+		if(my("drawcurrentvalue"),
+			text = round(my("value")*my("basevalue")*100)/100 + " " + my("unit"); // altered tick value with unit
+				box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+				position = my("coord") + [ // actual position, start at bar coord
+					my("value")*my("width") - .5*(box_2_1-box_1_1), // move to vertical line and adjust by half the texts length
+					- (box_3_2-box_2_2) - my("labelpadding") // move down by the height of the text
+				];
+
+			// Draw
+			drawtextbox(position, text, nada, nada, grey(1), bold->true);
+
+			// Draw scaffold overlay for percentage
+			if(my("scaffoldvalue"),
+				regional(scaffoldbox);
+				scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+				draw(scaffoldbox, color -> grey(.5));
+				fill(scaffoldbox, color -> grey(.9));
+			);
+
+		);
+
+		// Debug draw
+		if('debuglevel > 0, drawtext(my("coord")+[0.3,0],my("value")));
+		if('debuglevel > 0, draw(my("coord")));
+		if('debuglevel > 1, drawpoly(my("hitbox"), color->[0,1,0]));
+	);
+   
+
+  // @refactor: rename to upper instead of percentage
+
+	o:"drawpercentagearches" := ( // helper for drawing percentage arches (in "draw"), gets evaled with yoffset
+		regional(ticks, width, height, todraw, position, deltaY, angle);
+
+		if(isundefined(yoffset),yoffset=0);
+		if(isundefined(isTotalArc),isTotalArc=false);
+
+		ticks = 0 <: my("ticks"); // ticks with start (0) and end value (1) added
+    if (!isTotalArc,
+		width = my("width") / my("divisions"); // ellipses width / major axis
+		height = width / PHI; // ellipses height / minor axis
+
+		// go through all ticks and draw arch if required
+		forall(2..length(ticks),
+			todraw = my("value") >= ticks_# - 0.001; //checks for current tick, if value is bigger
+     position = my("coord") + [(#-1.5)*width, yoffset]; 
+      deltaY = [0,0];
+      if(and(my("drawUpperNumberlineLabels"), !my("isTicksDistanceEnough")), 
+      deltaY =  [0,my("tickLabelSizeLimits"):"max":"w"-1.25*my("labelDigitWidth")];
+      );
+			if(todraw,
+				connect(
+					ellipse(position+deltaY,	width/2, height/2, 0, PI),
+					color->my("color")
+				);
+        if(my("arcsLabels"),
+            labelText = my("sizeSteps"):"upper" + "er";
+            labelSize = textBoxSize(labelText, size, family);
+            angel = 0°;
+            position = my("coord") + [(#-1.5)*width,yoffset+height/2+0.1] + deltaY;
+            if(!my("isTicksDistanceEnough"), 
+              angle=90°;
+              position= position + [labelSize:"h"/2,labelSize:"w"/2];
+            );
+            drawtext(position, labelText, align->"center", color->my("color"), angle->angle),
+          );
+
+			);
+		);
+, //else: isTotalArc==true
+      //@incomplete: height should scale with width, should start higher than one single arc 
+      regional(color, ticksUnderValue,maxTickUnderValue,labelText);
+      color = my("color")+[100,0,0]/255;
+      ticksUnderValue = select(ticks, # < my("value") + 0.005);
+      maxTickUnderValue = max(ticksUnderValue);// ticks with start (0) and end value (1) added
+      width = my("width")*maxTickUnderValue; // ellipses width / major axis
+      height = 0.5*width / PHI; // ellipses height / minor axis
+      angle = 0°;
+      position = my("coord") + [0.5*width, yoffset];
+      deltaY = [0,0]; 
+      if(!my("isTicksDistanceEnough"),
+       height =  height*1.5
+      );
+      if(and(my("drawUpperNumberlineLabels"), !my("isTicksDistanceEnough")), 
+       deltaY =  [0,my("tickLabelSizeLimits"):"max":"w"-1.25*my("labelDigitWidth")];
+      );
+      connect(
+      ellipse(position+deltaY,	width/2, height/2, 0, PI),
+       color->color
+      );
+        if(and(my("totalArcLabel"),length(ticksUnderValue) > 1),
+            labelText = COUNTINGNUMBERNAMES(length(ticksUnderValue)-1) + " " + my("sizeSteps"):"upper"+ "er";
+            drawtext(my("coord") + [0.5*width, yoffset + height/2 + 0.1] + deltaY, labelText, align->"center", color->color),
+          );
+
+	);
+  );
+	
+	o:"drawvaluearches" := ( // helper for drawing value arches (in "draw"), gets evaled with yoffset
+		regional(ticks, width, height, todraw, position, deltaY, angle);
+
+		if(isundefined(yoffset),yoffset=0);
+		if(isundefined(isTotalArc),isTotalArc=false);
+    
+    ticks =0 <: my("ticks"); // ticks with start (0) and end value (1) added
+    if (!isTotalArc,
+      width = my("width") / my("divisions"); // ellipses width / major axis
+      height = width / PHI; // ellipses height / minor axis
+      // go through all ticks and draw arch if required
+      forall(2..length(ticks),
+        todraw = my("value") >= ticks_# - 0.001; //checks for current tick, if value is bigger
+        position = my("coord") + [(#-1.5)*width, yoffset]; 
+          deltaY = [0,0];
+          if(and(my("drawUpperNumberlineLabels"), !my("isTicksDistanceEnough")), 
+          deltaY =  [0,my("tickLabelSizeLimits"):"max":"w"-1.25*my("labelDigitWidth")];
+          );
+        if(todraw,
+          connect(
+            ellipse(position-deltaY,	width/2, height/2, PI, 2*PI),
+            color->my("color")
+          );
+
+        if(my("arcsLabels"),
+            labelText = my("sizeSteps"):"upper" + "er";
+            labelSize = textBoxSize(labelText, size, family);
+            angel = 0°;
+            position = my("coord") + [(#-1.5)*width,yoffset-height/2-0.55];
+            if(!my("isTicksDistanceEnough"), 
+              angle=90°;
+              position= position + [labelSize:"h"/2,-labelSize:"w"*0.6];
+            );
+            drawtext(position, labelText, align->"center", color->my("color"), angle->angle),
+          );
+        );
+      ); 
+    ,//else: isTotalArc==true
+      
+      regional(color, ticksUnderValue,maxTickUnderValue, labelText);
+      color = my("color")+[100,0,0]/255;
+      ticksUnderValue = select(ticks, # < my("value")+0.005);
+      maxTickUnderValue= max(ticksUnderValue);// ticks with start (0) and end value (1) added
+      width = my("width")*maxTickUnderValue; // ellipses width / major axis
+      height = 0.5*width / PHI; // ellipses height / minor axis
+      angle = 0°;
+      position = my("coord") + [0.5*width, yoffset];
+      deltaY = [0,0]; 
+      if(!my("isTicksDistanceEnough"),
+       height =  height*1.5
+      );
+      if(and(my("drawUpperNumberlineLabels"), !my("isTicksDistanceEnough")), 
+       deltaY =  -[0,my("tickLabelSizeLimits"):"max":"w"-1.25*my("labelDigitWidth")];
+      );
+      connect(
+      ellipse(position + deltaY,	width/2, height/2, PI, 2*PI),
+       color->color
+    );
+        if(and(my("totalArcLabel"),length(ticksUnderValue) > 1),
+            labelText = COUNTINGNUMBERNAMES(length(ticksUnderValue)-1) + " " + my("sizeSteps"):"lower"+ "er";
+            drawtext(my("coord") + [0.5*width, yoffset - height/2 - 0.55] + deltaY, labelText, align->"center", color->color),
+          );
+
+
+
+    );
+	);
+
+
+	o:"move" := if(my("ismoveable"),
+		my("setvalue");
+	);
+
+	o:"moveend" := if(my("ismoveable"),
+		// Set value tf accordingly
+		my("textfields"):"value":"value" = 100 * my("value") + "";
+
+		// Set percentage tf accordingly
+		my("textfields"):"percentage":"value" = my("value") + "";
+	);
+
+	o:"click" := if(my("isclickable"),
+		my("setvalue");
+	);
+	
+	o:"setvalue" := (
+		// Set value according to mouse coords
+    regional(newValue, minDistanceToTick, argminDistanceToTick);
+    newValue = (mouse().xy - my("coord"))_1 / my("width");
+    if(!isundefined(my("ticks")),
+      [minDistanceToTick, argminDistanceToTick] = minargmin(apply(my("ticks"), |# - newValue|));
+    ,
+      minDistanceToTick = 999;
+    );
+    //@incomplete: find the right threshold
+
+    if (minDistanceToTick > 0.005,
+      self():"value" = newValue;
+    ,// else: close to tick
+      self():"value" = my("ticks")_argminDistanceToTick;
+    );
+		
+		// Cut of properly
+    // for the dual-numberline: never cut at the higher end and always cut at 0
+		self():"value" = max(my("value"),0);
+
+		// Round according to given precision
+		self():"value" = my("precision") * round(my("value")/my("precision"));
+	);
+
+	o:"setTicks" := if(false,
+		regional(newTicks);
+		newTicks=[];
+		repeat(my("divisions")-1,i,
+				newTicks = newTicks:>i/(my("divisions"));
+		);
+		self():"ticks" = newTicks;
+	);
+
+	o; // Return the object.
+);
+
+// D | Initialization
+// D.0 | SL Config
+// ===============
+if(!usedivomath,
+	barprecision = .001;
+	barwidth = 16;
+	barheight = 2;
+	barvalue = 0;
+	basevalue = 1000;
+	subdivisions = 1;
+	unit = "GB";
+	barcolor = DZLMCOLORBLUE; // [1,0,0];
+	archcolor = DZLMCOLORGOLD;
+	fontfamily = nada;
+	leftoutpercentages = [];
+	leftoutvalues = [];  // hier Zahlen als Prozentwert des Grundwerts eingeben
+
+
+  // @refactor 
+  // WARNING: custompercentages and customvalues are being abused slightly in the implementation
+  // of the dual numberline, adding numbers to these lists my result in undesired behavior
+	custompercentages = [nada, nada, nada, nada, nada];
+	customvalues = [nada, nada, nada, nada, nada]; // hier Zahlen als Prozentwert des Grundwerts eingeben
+	scaffoldbasevalue = false;
+	scaffoldvalue = false;
+	scaffoldpercentage = false;
+	isbardraggable = true;
+	'debuglevel = 0;
+);
+
+valueMarkColors = [
+    COLORSPLASMA10:"purple",
+    COLORSPLASMA10:"magenta",
+    COLORSPLASMA10:"redsalmon",
+    COLORSPLASMA10:"apricot",
+    COLORSPLASMA10:"orange"
+];
+
+
+
+barCoord(x,y) := (
+    [x*barwidth,y*barheight] 
+);
+
+
+
+
+
+
+// @refactor: Try to improve the location of the widgets by 
+//    changing the (current) absolute system to a relative 
+//    one. possibly with multiple reference points
+
+
+// D.1 | Init Toggle Switches
+// new Toggle(coord,width,state,label,fontsize)
+// ============================================
+regional(screen, toggles, togglepad, );
+screen = apply(screenbounds(), #.xy);
+
+toggles = {
+"increasing"         : new Toggle(barCoord(0.125,1)+ [0,4], 1, false, "Hochrechnen", 14),
+"incNumberlineLabels": new Toggle(barCoord(0,0)    + [1,-11], 1, false, "Zahlenstrahl-Beschriftung", 14),
+"incArcs"            : new Toggle(barCoord(0,0)    + [14,-7], 1, false, "Bögen", 14),
+"incArcsLabels"      : new Toggle(barCoord(0,0)    + [15,-8], 1, false, "Bögen-Beschriftung", 14),
+"incTotalArc"        : new Toggle(barCoord(0,0)    + [14,-9], 1, false, "Gesamtbogen", 14),
+"incTotalArcLabel"   : new Toggle(barCoord(0,0)    + [15,-10], 1, false, "Bögen-Beschriftung", 14),
+"incValuesInput"     : new Toggle(barCoord(0,0)    + [14,-11], 1, false, "Werte eingeben", 14),
+"incUpperGivenUnit"  : new Toggle(barCoord(0,0)    + [8.5,-9], 1, false, "", 14),
+"incLowerGivenUnit"  : new Toggle(barCoord(0,0)    + [8.5,-10], 1, false, "", 14),
+"decreasing"         : new Toggle(barCoord(0.6,1)  + [0,4], 1, false, "Runterrechnen", 14),
+"decNumberSteps"     : new Toggle(barCoord(0,0)    + [17,-6], 1, false, "Anzahl Schritte", 14),
+"decSizeSteps"       : new Toggle(barCoord(0,0)    + [17,-7], 1, false, "Größe der Schritte", 14),
+"decNumberlineLabels": new Toggle(barCoord(0,0)    + [16,-10], 1, false, "Zahlenstrahl-Beschriftung", 14),
+"decArcs"            : new Toggle(barCoord(0,0)    + [16,-11], 1, false, "Bögen", 14),
+"decArcsLabels"      : new Toggle(barCoord(0,0)    + [17,-12], 1, false, "Bögen-Beschriftung", 14),
+//"decArcTotal"      : new Toggle(barCoord(0,0)    + [16,-12], 1, false, "Gesamtbogen", 14),
+"decValuesInput"     : new Toggle(barCoord(0,0)    + [16,-13], 1, false, "Werte eingeben", 14),
+};
+
+
+
+
+
+
+// D.2 | Init Text Inputs for (sub)divisions and base value
+// ===================================================
+regional(textfields, inputdiv, inputbaseval);
+
+
+// @feature: add bgcolor option to textfields @@bgcolor_option@@
+textfields = { 
+"upperUnit" : nada,
+"lowerUnit" : nada,
+"incUpperSizeSteps" : nada,
+"incLowerSizeSteps" : nada,
+"incGivenValue" : nada,
+"incUpperValueMark1" : nada,
+"incLowerValueMark1" : nada,
+"incUpperValueMark1" : nada, 
+"incLowerValueMark1" : nada, 
+"incUpperValueMark2" : nada, 
+"incLowerValueMark2" : nada, 
+"incUpperValueMark3" : nada, 
+"incLowerValueMark3" : nada, 
+"incUpperValueMark4" : nada, 
+"incLowerValueMark4" : nada, 
+"incUpperValueMark5" : nada, 
+"incLowerValueMark5" : nada, 
+"decUpperTargetValue" : nada,
+"decLowerTargetValue" : nada,
+"decNumberSteps" : nada,
+"decUpperStepSize" : nada,
+"decLowerStepSize" : nada,
+"decUpperValueMark1" : nada,
+"decLowerValueMark1" : nada,
+"decUpperValueMark2" : nada,
+"decLowerValueMark2" : nada,
+"decUpperValueMark3" : nada,
+"decLowerValueMark3" : nada,
+"decUpperValueMark4" : nada,
+"decLowerValueMark4" : nada,
+"decUpperValueMark5" : nada,
+"decLowerValueMark5" : nada,
+};
+
+
+
+
+
+// Config units tfs
+// @refactor: Use html textfields if there is not enough time to implement the keyboard
+textfields:"upperUnit" = new TextInput(barCoord(1,1)+[0.25,0.25], "", "full"); 
+textfields:"upperUnit":"width" = 3;
+textfields:"upperUnit":"handle" = bar;
+textfields:"upperUnit":"selectionToggle" = toggles:"incUpperGivenUnit";
+textfields:"upperUnit":"value" = upperUnit;
+textfields:"upperUnit":"onupdate" := (
+	my("handle"):"units":"upper" = my("value");
+	my("selectionToggle"):"label" = my("value");
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+// @refactor: Use html textfields if there is not enough time to implement the keyboard
+textfields:"lowerUnit" = new TextInput(barCoord(1,0)+[0.25,-0.75], "", "full"); 
+textfields:"lowerUnit":"width" = 3;
+textfields:"lowerUnit":"handle" = bar;
+textfields:"lowerUnit":"selectionToggle" = toggles:"incLowerGivenUnit";
+textfields:"lowerUnit":"value" = lowerUnit;
+textfields:"lowerUnit":"onupdate" := (
+	my("handle"):"units":"lower" = my("value");
+	my("selectionToggle"):"label" = my("value");
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+// @incomplete: update function: incUpperSizeSteps
+textfields:"incUpperSizeSteps" = new TextInput(barCoord(0,0) + [6,-7], [ "Schrittgröße oben","er-Schritte" ], "numeric"); 
+textfields:"incUpperSizeSteps":"handle" = bar;
+textfields:"incUpperSizeSteps":"value" = incUpperSizeSteps;
+textfields:"incUpperSizeSteps":"onupdate" := (
+	my("handle"):"sizeSteps":"upper" = parse(my("value"));
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+
+);
+// @incomplete: update function: lowerStepSizegivenValue
+textfields:"incLowerSizeSteps" = new TextInput([6,-8], [ "Schrittgröße unten","er-Schritte" ], "numeric"); 
+textfields:"incLowerSizeSteps":"handle" = bar;
+textfields:"incLowerSizeSteps":"value" = incLowerSizeSteps;
+textfields:"incLowerSizeSteps":"onupdate" := (
+	my("handle"):"sizeSteps":"lower" = parse(my("value"));
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+  
+// @feature: Dropdown menu left of the textfield to pick the given unit
+// alternatively use to buttons that are labeled acording to the unit labels
+// @incomplete: update function: incGivenValue
+
+textfields:"incGivenValue" = new TextInput([6,-9.5], "Gegeben", "numeric"); 
+textfields:"incGivenValue":"handle" = bar;
+textfields:"incGivenValue":"value" = incGivenValue;
+textfields:"incGivenValue":"onupdate" := (
+	my("handle"):"givenValue" = parse(my("value"));
+
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+// @temporary: mode = "numeric"  
+
+
+
+
+
+
+textfields:"incUpperValueMark1" = new TextInput([18,-12], "Wert oben", "numeric"); 
+textfields:"incUpperValueMark1":"index" = 1; 
+textfields:"incUpperValueMark1":"handle" = bar;
+textfields:"incUpperValueMark1":"value" = incUpperValueMark1;
+textfields:"incUpperValueMark1":"drawBackground" := (
+  labelSize = textBoxSize(my("label"), my("fontsize"), my("fontfamily"));
+ fillcircle(my("coord")+[-labelSize:"w"/2,-0.2], 0.25, color->valueMarkColors_(my("index")));
+);
+textfields:"incUpperValueMark1":"onupdate" := (
+  custompercentages_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+
+textfields:"incLowerValueMark1" = new TextInput([18,-13], "Wert unten", "numeric"); 
+textfields:"incLowerValueMark1":"index" = 1; 
+textfields:"incLowerValueMark1":"handle" = bar;
+textfields:"incLowerValueMark1":"value" = incLowerValueMark1;
+textfields:"incLowerValueMark1":"onupdate" := (
+  customvalues_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+textfields:"incUpperValueMark2" = new TextInput([24,-12], "Wert oben", "numeric"); 
+textfields:"incUpperValueMark2":"index" = 2; 
+textfields:"incUpperValueMark2":"handle" = bar;
+textfields:"incUpperValueMark2":"value" = incUpperValueMark1;
+textfields:"incUpperValueMark2":"drawBackground" := (
+  labelSize = textBoxSize(my("label"), my("fontsize"), my("fontfamily"));
+ fillcircle(my("coord")+[-labelSize:"w"/2,-0.2], 0.25, color->valueMarkColors_(my("index")));
+);
+textfields:"incUpperValueMark2":"onupdate" := (
+  custompercentages_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+
+textfields:"incLowerValueMark2" = new TextInput([24,-13], "Wert unten", "numeric"); 
+textfields:"incLowerValueMark2":"index" = 2; 
+textfields:"incLowerValueMark2":"handle" = bar;
+textfields:"incLowerValueMark2":"value" = incLowerValueMark1;
+textfields:"incLowerValueMark2":"onupdate" := (
+  customvalues_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+textfields:"incUpperValueMark3" = new TextInput([30,-12], "Wert oben", "numeric"); 
+textfields:"incUpperValueMark3":"index" = 3; 
+textfields:"incUpperValueMark3":"handle" = bar;
+textfields:"incUpperValueMark3":"value" = incUpperValueMark1;
+textfields:"incUpperValueMark3":"drawBackground" := (
+  labelSize = textBoxSize(my("label"), my("fontsize"), my("fontfamily"));
+ fillcircle(my("coord")+[-labelSize:"w"/2,-0.2], 0.25, color->valueMarkColors_(my("index")));
+);
+textfields:"incUpperValueMark3":"onupdate" := (
+  custompercentages_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+
+textfields:"incLowerValueMark3" = new TextInput([30,-13], "Wert unten", "numeric"); 
+textfields:"incLowerValueMark3":"index" = 3; 
+textfields:"incLowerValueMark3":"handle" = bar;
+textfields:"incLowerValueMark3":"value" = incLowerValueMark1;
+textfields:"incLowerValueMark3":"onupdate" := (
+  customvalues_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+textfields:"incUpperValueMark4" = new TextInput([18,-14.5], "Wert oben", "numeric"); 
+textfields:"incUpperValueMark4":"index" = 4; 
+textfields:"incUpperValueMark4":"handle" = bar;
+textfields:"incUpperValueMark4":"value" = incUpperValueMark1;
+textfields:"incUpperValueMark4":"drawBackground" := (
+  labelSize = textBoxSize(my("label"), my("fontsize"), my("fontfamily"));
+ fillcircle(my("coord")+[-labelSize:"w"/2,-0.2], 0.25, color->valueMarkColors_(my("index")));
+);
+textfields:"incUpperValueMark4":"onupdate" := (
+  custompercentages_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+
+textfields:"incLowerValueMark4" = new TextInput([18,-15.5], "Wert unten", "numeric"); 
+textfields:"incLowerValueMark4":"index" = 4; 
+textfields:"incLowerValueMark4":"handle" = bar;
+textfields:"incLowerValueMark4":"value" = incLowerValueMark1;
+textfields:"incLowerValueMark4":"onupdate" := (
+  customvalues_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+textfields:"incUpperValueMark5" = new TextInput([24,-14.5], "Wert oben", "numeric"); 
+textfields:"incUpperValueMark5":"index" = 5; 
+textfields:"incUpperValueMark5":"handle" = bar;
+textfields:"incUpperValueMark5":"value" = incUpperValueMark1;
+textfields:"incUpperValueMark5":"drawBackground" := (
+  labelSize = textBoxSize(my("label"), my("fontsize"), my("fontfamily"));
+ fillcircle(my("coord")+[-labelSize:"w"/2,-0.2], 0.25, color->valueMarkColors_(my("index")));
+);
+textfields:"incUpperValueMark5":"onupdate" := (
+  custompercentages_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+
+textfields:"incLowerValueMark5" = new TextInput([24,-15.5], "Wert unten", "numeric"); 
+textfields:"incLowerValueMark5":"index" = 5; 
+textfields:"incLowerValueMark5":"handle" = bar;
+textfields:"incLowerValueMark5":"value" = incLowerValueMark1;
+textfields:"incLowerValueMark5":"onupdate" := (
+  customvalues_(my("index")) =  parse(my("value"));
+	
+  obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+  self():"color" = my("inactiveColor");
+);
+
+
+
+
+
+textfields:"decUpperTargetValue" = new TextInput([21,-4], "Zielwert oben", "numeric"); 
+textfields:"decUpperTargetValue":"handle" = bar;
+textfields:"decUpperTargetValue":"value" = decUpperTargetValue;
+textfields:"decUpperTargetValue":"onupdate" := (
+	println(my("value"))
+);
+
+textfields:"decLowerTargetValue" = new TextInput([21,-5], "Zielwert unten", "numeric"); 
+textfields:"decLowerTargetValue":"handle" = bar;
+textfields:"decLowerTargetValue":"value" = decLowerTargetValue;
+textfields:"decLowerTargetValue":"onupdate" := (
+	println(my("value"))
+);
+
+
+textfields:"decNumberSteps" = new TextInput([22.5,-6], "", "numeric"); 
+textfields:"decNumberSteps":"handle" = bar;
+textfields:"decNumberSteps":"value" = decNumberSteps;
+textfields:"decNumberSteps":"onupdate" := (
+	println(my("value"))
+);
+
+
+textfields:"decUpperStepSize" = new TextInput([23,-8], ["Schrittgröße oben","er-Schritte"], "numeric"); 
+textfields:"decUpperStepSize":"handle" = bar;
+textfields:"decUpperStepSize":"value" = decUpperStepSize;
+textfields:"decUpperStepSize":"onupdate" := (
+	println(my("value"))
+);
+
+
+textfields:"decLowerStepSize" = new TextInput([23,-9], ["Schrittgröße unten","er-Schritte"], "numeric"); 
+textfields:"decLowerStepSize":"handle" = bar;
+textfields:"decLowerStepSize":"value" = decLowerStepSize;
+textfields:"decLowerStepSize":"onupdate" := (
+	println(my("value"))
+);
+
+textfields:"decUpperValueMark" = new TextInput([21,-14], "Wert oben", "numeric"); 
+textfields:"decUpperValueMark":"handle" = bar;
+textfields:"decUpperValueMark":"value" = decUpperValueMark;
+textfields:"decUpperValueMark":"onupdate" := (
+	println(my("value"))
+);
+
+textfields:"decLowerValueMark" = new TextInput([21,-15], "Wert unten", "numeric"); 
+textfields:"decLowerValueMark":"handle" = bar;
+textfields:"decLowerValueMark":"value" = decLowerValueMark;
+textfields:"decLowerValueMark":"onupdate" := (
+	println(my("value"))
+);
+textfields:"decUpperValueMark1" = new TextInput([27,-14], "Wert oben", "numeric"); 
+textfields:"decUpperValueMark1":"handle" = bar;
+textfields:"decUpperValueMark1":"value" = decUpperValueMark;
+textfields:"decUpperValueMark1":"onupdate" := (
+	println(my("value"))
+);
+
+textfields:"decLowerValueMark1" = new TextInput([27,-15], "Wert unten", "numeric"); 
+textfields:"decLowerValueMark1":"handle" = bar;
+textfields:"decLowerValueMark1":"value" = decLowerValueMark;
+textfields:"decLowerValueMark1":"onupdate" := (
+	println(my("value"))
+);
+textfields:"decUpperValueMark2" = new TextInput([33,-14], "Wert oben", "numeric"); 
+textfields:"decUpperValueMark2":"handle" = bar;
+textfields:"decUpperValueMark2":"value" = decUpperValueMark;
+textfields:"decUpperValueMark2":"onupdate" := (
+	println(my("value"))
+);
+
+textfields:"decLowerValueMark2" = new TextInput([33,-15], "Wert unten", "numeric"); 
+textfields:"decLowerValueMark2":"handle" = bar;
+textfields:"decLowerValueMark2":"value" = decLowerValueMark;
+textfields:"decLowerValueMark2":"onupdate" := (
+	println(my("value"))
+);
+textfields:"decUpperValueMark3" = new TextInput([21,-16], "Wert oben", "numeric"); 
+textfields:"decUpperValueMark3":"handle" = bar;
+textfields:"decUpperValueMark3":"value" = decUpperValueMark;
+textfields:"decUpperValueMark3":"onupdate" := (
+	println(my("value"))
+);
+
+textfields:"decLowerValueMark3" = new TextInput([21,-17], "Wert unten", "numeric"); 
+textfields:"decLowerValueMark3":"handle" = bar;
+textfields:"decLowerValueMark3":"value" = decLowerValueMark;
+textfields:"decLowerValueMark3":"onupdate" := (
+	println(my("value"))
+);
+
+textfields:"decUpperValueMark4" = new TextInput([27,-16], "Wert oben", "numeric"); 
+textfields:"decUpperValueMark4":"handle" = bar;
+textfields:"decUpperValueMark4":"value" = decUpperValueMark;
+textfields:"decUpperValueMark4":"onupdate" := (
+	println(my("value"))
+);
+
+textfields:"decLowerValueMark4" = new TextInput([27,-17], "Wert unten", "numeric"); 
+textfields:"decLowerValueMark4":"handle" = bar;
+textfields:"decLowerValueMark4":"value" = decLowerValueMark;
+textfields:"decLowerValueMark4":"onupdate" := (
+	println(my("value"))
+);
+
+
+// Init +/- Buttons 
+// ==================
+// new Button(coord,width,height,label,fontsize)
+regional(buttons);
+buttons = {
+     "selectUpperUnit": nada,
+     "selectLowerUnit": nada,
+     "incUpperSizeStepsPlus": nada,
+     "incUpperSizeStepsMinus": nada,
+     "incLowerSizeStepsPlus": nada,
+     "incLowerSizeStepsMinus": nada,
+     "addValueMarkInputs": nada
+    };
+
+
+ buttons:"addValueMarkInputs" = new Button([20,-11], 7., .7, HEAVYPLUS+" weitere Werte hinzufügen", 12);
+ buttons:"addValueMarkInputs":"markValueCounter" = 1;
+ buttons:"addValueMarkInputs":"cornerradius" = .35;
+ buttons:"addValueMarkInputs":"script" := (
+    if(my("markValueCounter") < 5,
+      self():"markValueCounter" = my("markValueCounter") + 1; 
+      obj = obj ++ [textfields:("incUpperValueMark" + my("markValueCounter")),
+                    textfields:("incLowerValueMark" + my("markValueCounter"))];
+    );
+
+ );
+buttons:"incUpperSizeStepsPlus" = new Button([12.125,-7], .6, .6, HEAVYPLUS, 10);
+buttons:"incUpperSizeStepsPlus":"handle" = textfields:"incUpperSizeSteps";
+buttons:"incUpperSizeStepsPlus":"cornerradius" = .35;
+buttons:"incUpperSizeStepsPlus":"script" := (
+ regional(newValue);
+newValue = parse(my("handle"):"value");
+ if (isundefined(newValue),
+    newValue = 0;
+ );
+ newValue = newValue + 1;
+ my("handle"):"value" = newValue + "";
+ my("handle"):"onupdate";
+
+);
+
+buttons:"incUpperSizeStepsMinus" = new Button([11.5,-7], .6, .6, HEAVYMINUS, 10);
+buttons:"incUpperSizeStepsMinus":"handle" = textfields:"incUpperSizeSteps";
+buttons:"incUpperSizeStepsMinus":"cornerradius" = .35;
+buttons:"incUpperSizeStepsMinus":"script" := (
+ regional(newValue);
+
+ newValue = parse(my("handle"):"value");
+ if (isundefined(newValue),
+    newValue = 0;
+ );
+ newValue = max(1, newValue - 1);
+ my("handle"):"value" = newValue + "";
+ my("handle"):"onupdate";
+);
+
+buttons:"incLowerSizeStepsPlus" = new Button([12.125,-8], .6, .6, HEAVYPLUS, 10);
+buttons:"incLowerSizeStepsPlus":"handle" = textfields:"incLowerSizeSteps";
+buttons:"incLowerSizeStepsPlus":"cornerradius" = .35;
+buttons:"incLowerSizeStepsPlus":"script" := (
+ regional(newValue);
+newValue = parse(my("handle"):"value");
+ if (isundefined(newValue),
+    newValue = 0;
+ );
+ newValue = newValue + 1;
+ my("handle"):"value" = newValue + "";
+ my("handle"):"onupdate";
+);
+
+buttons:"incLowerSizeStepsMinus" = new Button([11.5,-8], .6, .6, HEAVYMINUS, 10);
+buttons:"incLowerSizeStepsMinus":"handle" = textfields:"incLowerSizeSteps";
+buttons:"incLowerSizeStepsMinus":"cornerradius" = .35;
+buttons:"incLowerSizeStepsMinus":"script" := (
+
+ regional(newValue);
+
+ newValue = parse(my("handle"):"value");
+ if (isundefined(newValue),
+    newValue = 0;
+ );
+ newValue = max(1, newValue - 1);
+ my("handle"):"value" = newValue + "";
+ my("handle"):"onupdate";
+);
+
+
+
+
+// buttons:"selectUpperUnit" = new Button([19,3], .7, .7, textfields:"upperUnit":"value", 20);
+// buttons:"selectUpperUnit":"handle" = textfields:"divisions";
+// buttons:"selectUpperUnit":"cornerradius" = .35;
+// buttons:"selectUpperUnit":"script" := (
+// //	regional(val);
+// //	val = parse(my("handle"):"value");
+// //	val = max(1,val-1);
+// //	my("handle"):"value" = val + "";
+// //	my("handle"):"onupdate";
+// println(my("value"));
+// );
+// 
+// buttons:"selectLowerUnit" = new Button([19,2], .7, .7, "...", 20);
+// buttons:"selectLowerUnit":"handle" = textfields:"lowerUnit";
+// buttons:"selectLowerUnit":"cornerradius" = .35;
+// buttons:"selectLowerUnit":"script" := (
+// //	regional(val);
+// //	val = parse(my("handle"):"value");
+// //	val = min(100,val+1);
+// //	my("handle"):"value" = val + "";
+// //	my("handle"):"onupdate";
+// println(my("value"));
+// );
+//// Configure Toggles corresponding to G,P,p textfields to toggle visibility
+//// ========================================================================
+
+
+
+
+// @improvement: if toggle switched off remove all "sub-widgets" from the obj list
+// @incomplete: all 'inc...' wigdets have to be added to this script @@contained_widgets@@
+toggles:"increasing":"script" := if(my("state"),
+  // increasing and decreasing toggles are mutually exclusive
+  if(toggles:"decreasing":"state",
+    toggles:"decreasing":"click";
+  );
+
+obj = obj ++ [textfields:"incUpperSizeSteps"];
+obj = obj ++ [textfields:"incLowerSizeSteps"];
+obj = obj ++ [textfields:"incGivenValue"];
+obj = obj ++ [toggles:"incNumberlineLabels"];
+obj = obj ++ [toggles:"incArcs"];
+obj = obj ++ [toggles:"incTotalArc"];
+obj = obj ++ [toggles:"incValuesInput"];
+obj = obj ++ [toggles:"incUpperGivenUnit"];
+obj = obj ++ [toggles:"incLowerGivenUnit"];
+obj = obj ++ [ buttons:"incUpperSizeStepsPlus",
+               buttons:"incUpperSizeStepsMinus",
+               buttons:"incLowerSizeStepsPlus",
+               buttons:"incLowerSizeStepsMinus"];
+,
+ forall([toggles:"incNumberlineLabels",
+         toggles:"incArcs", 
+         toggles:"incTotalArc", 
+         toggles:"incValuesInput",
+         toggles:"incUpperGivenUnit",
+         toggles:"incLowerGivenUnit"], toggle,
+  
+        if(toggle:"state", toggle:"click")
+);
+obj = obj -- [textfields:"incUpperSizeSteps"];
+obj = obj -- [textfields:"incLowerSizeSteps"];
+obj = obj -- [textfields:"incGivenValue"];
+obj = obj -- [toggles:"incNumberlineLabels"];
+obj = obj -- [toggles:"incArcs"];
+obj = obj -- [toggles:"incTotalArc"];
+obj = obj -- [toggles:"incValuesInput"];
+obj = obj -- [toggles:"incUpperGivenUnit"];
+obj = obj -- [toggles:"incLowerGivenUnit"];
+
+obj = obj -- [ buttons:"incUpperSizeStepsPlus",
+               buttons:"incUpperSizeStepsMinus",
+               buttons:"incLowerSizeStepsPlus",
+               buttons:"incLowerSizeStepsMinus"];
+);
+
+toggles:"incValuesInput":"script" := if(my("state"),
+obj = obj ++ [textfields:"incUpperValueMark1"];
+obj = obj ++ [textfields:"incLowerValueMark1"];
+obj = obj ++ [buttons:"addValueMarkInputs"];
+,
+obj = obj -- [buttons:"addValueMarkInputs"];
+obj = obj -- [textfields:"incUpperValueMark1"];
+obj = obj -- [textfields:"incLowerValueMark1"];
+obj = obj -- [textfields:"incUpperValueMark2"];
+obj = obj -- [textfields:"incLowerValueMark2"];
+obj = obj -- [textfields:"incUpperValueMark3"];
+obj = obj -- [textfields:"incLowerValueMark3"];
+obj = obj -- [textfields:"incUpperValueMark4"];
+obj = obj -- [textfields:"incLowerValueMark4"];
+obj = obj -- [textfields:"incUpperValueMark5"];
+obj = obj -- [textfields:"incLowerValueMark5"];
+);
+
+
+toggles:"incUpperGivenUnit":"handle" = bar; // pointer to bar has to be set again after definition of bar
+toggles:"incUpperGivenUnit":"script" := if(my("state"),
+ 
+  // the toggles for unit-selection are mutually exclusive,  but can both be off  
+  if(toggles:"incLowerGivenUnit":"state",
+    toggles:"incLowerGivenUnit":"click";
+  );
+ 
+  my("handle"):"givenUnit" = "upper";
+  my("handle"):"dependentUnit" = "lower";
+
+  ,//else: my(state) == false
+
+  // if both Unit toggles are off reset the given/dependentUnit;
+  if(!toggles:"incLowerGivenUnit":"state",
+  my("handle"):"givenUnit" = nada;
+  my("handle"):"dependentUnit" = nada;
+
+  );
+
+  
+);
+
+toggles:"incLowerGivenUnit":"handle" = bar; // pointer to bar has to be set again after definition of bar
+toggles:"incLowerGivenUnit":"script" := if(my("state"),
+
+  // the toggles for unit-selection are mutually exclusive,  but can both be off  
+  if(toggles:"incUpperGivenUnit":"state",
+    toggles:"incUpperGivenUnit":"click";
+  );
+ 
+  my("handle"):"givenUnit"  = "lower"; 
+  my("handle"):"dependentUnit" = "upper";
+
+  ,//else: my(state) == false
+
+    // if both Unit toggles are off reset the given/dependentUnit;
+  if(!toggles:"incUpperGivenUnit":"state",
+  my("handle"):"givenUnit" = nada;
+  my("handle"):"dependentUnit" = nada;
+
+  );
+
+);
+
+
+toggles:"incArcs":"script" := if(my("state"),
+obj = obj ++ [toggles:"incArcsLabels"];
+,
+obj = obj -- [toggles:"incArcsLabels"];
+);
+
+toggles:"incTotalArc":"script" := if(my("state"),
+obj = obj ++ [toggles:"incTotalArcLabel"];
+,
+obj = obj -- [toggles:"incTotalArcLabel"];
+);
+
+
+// @improvement: if toggle switched off remove all "sub-widgets" from the obj list
+// @incomplete: all 'dec-...' widgets have to be added to this script @@contained_widgets@@
+toggles:"decreasing":"script" := if(my("state"),
+  // increasing and decreasing toggles are mutually exclusive
+  if(toggles:"increasing":"state",
+    toggles:"increasing":"click";
+  );
+obj = obj ++ [textfields:"decUpperTargetValue"];
+obj = obj ++ [textfields:"decLowerTargetValue"];
+obj = obj ++ [toggles:"decSizeSteps"];
+obj = obj ++ [toggles:"decNumberSteps"];
+obj = obj ++ [toggles:"decNumberlineLabels"];
+obj = obj ++ [toggles:"decArcs"]; 
+obj = obj ++ [toggles:"decValuesInput"];
+,
+
+ forall([toggles:"decSizeSteps",
+         toggles:"decNumberSteps",
+         toggles:"decNumberlineLabels",
+         toggles:"decArcs", 
+         toggles:"decValuesInput"], toggle,
+        if(toggle:"state", toggle:"click");
+);
+obj = obj -- [textfields:"decUpperTargetValue"];
+obj = obj -- [textfields:"decLowerTargetValue"];
+obj = obj -- [toggles:"decSizeSteps"];
+obj = obj -- [toggles:"decNumberSteps"];
+obj = obj -- [toggles:"decNumberlineLabels"];
+obj = obj -- [toggles:"decArcs"]; 
+obj = obj -- [toggles:"decValuesInput"];
+);
+
+toggles:"decNumberSteps":"script" := if(my("state"),
+obj = obj ++ [textfields:"decNumberSteps"];
+,
+obj = obj -- [textfields:"decNumberSteps"];
+);
+
+toggles:"decSizeSteps":"script" := if(my("state"),
+obj = obj ++ [textfields:"decUpperStepSize"];
+obj = obj ++ [textfields:"decLowerStepSize"];
+,
+obj = obj -- [textfields:"decUpperStepSize"];
+obj = obj -- [textfields:"decLowerStepSize"];
+);
+
+toggles:"decArcs":"script" := if(my("state"),
+obj = obj ++ [toggles:"decArcsLabels"];
+,
+obj = obj -- [toggles:"decArcsLabels"];
+);
+
+
+toggles:"decValuesInput":"script" := if(my("state"),
+obj = obj ++ [textfields:"decUpperValueMark"];
+obj = obj ++ [textfields:"decLowerValueMark"];
+,
+obj = obj -- [textfields:"decUpperValueMark"];
+obj = obj -- [textfields:"decLowerValueMark"];
+);
+
+
+
+
+
+
+// Init Percentagebar
+// new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
+// ==================================================================================
+bar = new Percentagebar([0,0], barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
+bar:"drawUpperNumberlineLabels"	:= toggles:"incNumberlineLabels":"state";
+bar:"drawLowerNumberlineLabels"				:= toggles:"incNumberlineLabels":"state";
+
+// bar:"drawbasevaluelabel"		:= toggles:"basevalue":"state";
+// bar:"drawcurrentpercentage"	:= toggles:"percentage":"state";
+// bar:"drawcurrentvalue"			:= toggles:"part":"state";
+bar:"drawarches"						:= toggles:"incArcs":"state";
+bar:"drawTotalArc"						:= toggles:"incTotalArc":"state";
+bar:"arcsLabels"						:= toggles:"incArcsLabels":"state";
+bar:"totalArcLabel"						:= toggles:"incTotalArcLabel":"state";
+// bar:"standardTicks"	= 'standardTicks;
+
+
+// Update handles for textfields, since bar wasn't defined earlier
+textfields:"upperUnit":"handle" = bar;
+textfields:"lowerUnit":"handle" = bar;
+textfields:"incUpperSizeSteps":"handle" = bar;
+textfields:"incLowerSizeSteps":"handle" = bar;
+textfields:"incGivenValue":"handle" = bar;
+textfields:"incUpperValueMark1":"handle" = bar;
+textfields:"incLowerValueMark1":"handle" = bar;
+textfields:"incUpperValueMark1":"handle" = bar;
+textfields:"incLowerValueMark1":"handle" = bar;
+textfields:"incUpperValueMark2":"handle" = bar;
+textfields:"incLowerValueMark2":"handle" = bar;
+textfields:"incUpperValueMark3":"handle" = bar;
+textfields:"incLowerValueMark3":"handle" = bar;
+textfields:"incUpperValueMark4":"handle" = bar;
+textfields:"incLowerValueMark4":"handle" = bar;
+textfields:"decUpperTargetValue":"handle" = bar;
+textfields:"decLowerTargetValue":"handle" = bar;
+textfields:"decNumberSteps":"handle" = bar;
+textfields:"decUpperStepSize":"handle" = bar;
+textfields:"decLowerStepSize":"handle" = bar;
+textfields:"decUpperValueMark":"handle" = bar;
+textfields:"decLowerValueMark":"handle" = bar;
+toggles:"incUpperGivenUnit":"handle" = bar;
+toggles:"incLowerGivenUnit":"handle" = bar;
+
+//bar:"divisions" := parse(textfields:"divisions":"value"); // update on input with keyboard
+
+// Add handles to bar for all the UI stuff
+bar:"toggles" = toggles;
+bar:"textfields" = textfields;
+//bar:"buttons" = buttons;
+//
+
+// @incomplete: @@contained_widgets@@ 
+obj = obj ++ [toggles:"increasing", toggles:"decreasing"];
+
+
+
+obj = obj ++ [textfields:"upperUnit", textfields:"lowerUnit" ];
+
+
+//	buttons:"plusbase", buttons:"plusvalue",buttons:"pluspercentage",
+//	buttons:"minusbase", buttons:"minusvalue",buttons:"minuspercentage"
+//	];
+obj = obj :> bar;
+obj = obj :> arch1;
+obj = obj :> arch2;
+obj = obj :> agg;
+//
+//// Call toggle scripts for G,P,p toggle to put in textfields approriately
+//toggles:"showtf-base":"script";
+//toggles:"showtf-value":"script";
+//toggles:"showtf-perc":"script";
+//
+// #################
+// PERCENTAGEBAR:END
+// #################
+
+</script>
+<script id="csmousedrag" type="text/x-cindyscript">
+//FW: mousedrag
+// v1
+// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
+
+if(!isundefined(hot),
+ //err(action); // err(startmouse); err(startcoord); err(mouse().xy);
+
+ if(not(isundefined(hot:"deletecopyifnotmovedandsubstitutebyoriginal")), 
+			hot:"deletecopyifnotmovedandsubstitutebyoriginal"=NADA); 
+		
+ //err(dist(mouse().xy,startmouse) +" "+pinchsensitivity/10);
+ act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+ oldmouse = mouse().xy;
+);
+
+;
+
+</script>
+<script id="csmouseclick" type="text/x-cindyscript">
+//FW: mouseclick
+// v1
+if(false,
+
+// Der gesamte Code von Cklic wird jetzt bei release ausgeführt
+// solange die Sensitiviät auf Klicks in CindyJS nicht verbessert ist
+
+// Bei IPad und wird press, release UND cklick ausgelöst
+// Will man mausklick, muss man press/release abfangen
+
+// Teste alle Objekte, ob sie hot sind und sende ihnen gegebenfalls ein "click"
+forall(obj,o,
+		if(o:"ishot",
+		if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
+			o:"click"; 
+			,
+			obj=obj--[o]; // Kopie wieder löschen
+			hot=o:"deletecopyifnotmovedandsubstitutebyoriginal"; //gemerktes Original wiederaktivieren
+			//hot:"click";
+			);
+		//err("click:"+o:"name");
+		);
+);
+
+if(!isundefined(oldaction),
+  act(oldaction,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+  oldaction=NADA;
+);
+
+// Alternative Formulierung (schöner?):
+//forall(select(obj,#:"ishot"),#:"click");
+);
+
+;
+
+</script>
+<script id="csmouseup" type="text/x-cindyscript">
+//FW: mouseup
+// v1
+// Code für RELEASE
+if(!isundefined(hot),
+  //err("released:"+action);
+
+	act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+
+  //Allgemeiner "drop on" event – entscheiden, ob der vor, nach oder vor und nach act(...) sein soll.
+  if(!isundefined(action),
+		forall(select(obj,o,eval(o:"ishot",coord->mouse())),droptarget, eval(droptarget:"dropevent", dropobject->hot);
+	); 
+	);
+
+  if(isundefined(hot:"sticky"),
+			act(hot,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+	);
+  if(!isundefined(hot:"sticky"),
+			if(!(hot:"sticky"),
+			act(hot,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse),
+			act(hot,action+"pause",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse)
+
+  ););
+);
+
+if(hot:"sticky", oldaction = hot);
+
+
+// Code für CLICK = Release when close
+
+//err(dist(startmouse,mouse().xy)+" "+pinchsensitivity);
+
+if(dist(startmouse,mouse().xy)<pinchsensitivity,
+// then click
+
+forall(obj,o,
+		if(o:"ishot",
+		if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
+			o:"click"; 
+			,
+			obj=obj--[o]; // Kopie wieder löschen
+			hot=o:"deletecopyifnotmovedandsubstitutebyoriginal"; //gemerktes Original wiederaktivieren
+			//hot:"click";
+			);
+		//err("click:"+o:"name");
+		);
+);
+
+if(!isundefined(oldaction),
+  act(oldaction,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+  oldaction=NADA;
+);
+
+);
+
+;
+
+</script>
+<script id="csmousemove" type="text/x-cindyscript">
+//FW: mousemove
+// v2
+// Recent changes:
+// - removed call to divomatUpdateResults(). Has to be called in VAM at the right time.
+
+// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
+
+if(!isundefined(oldaction),
+	//err(action); // err(startmouse); err(startcoord); err(mouse().xy);
+
+	act(oldaction,action+"sticky",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+	oldmouse = mouse().xy;
+
+	//err(oldaction);
+	clrscr();
+	forall(obj, #:"draw");
+	forall(objpreview, eval(#:"draw",preview->true));
+	repaint();
+
+);
+
+;
+
+</script>
+<script id="csdraw" type="text/x-cindyscript">
+//FW: global drawing
+// v3
+// Recent changes:
+// - changed drawing order for Debug stuff
+
+// Color background.
+//fill(screen(), color->'bgcolor);
+
+
+// Globale Screenparameter
+getscreenparams();
+copyrighttext.xy = (screenbounds()_3).xy-(225,-10)/screenresolution();
+
+// Zeichne alle Objekte, die in der Liste "obj" sind
+// zuerst alle types entsprechend der Typreihenfolge in typeorder, dann den Rest
+forall(typeorder,to,
+		forall(obj,o, if(o:"type"==to, o:"draw"))
+);
+
+forall(obj,o,
+    //println(o:"label");
+		if(not(contains(typeorder,o:"type")),o:"draw")
+);
+
+// DEBUGGING
+if('debuglevel > 1,
+	repeat(10,drawcircle([0,0],2^#,color->[0.95,0.95,0.95]));
+	draw(join([0,0],[1,0]),color->[0.8,0.8,0.8]);
+	draw(join([0,0],[0,1]),color->[0.8,0.8,0.8]);
+);
+
+
+if('debuglevel > 9, 
+	drawtextbox('doctextpos, 'doc, nada, nada, grey(.5));
+);
+
+;
+
+// @temporary
+drawtext(mouse().xy, "("+round(100*mouse().x)/100+" | "+round(100*mouse().y)/100+")");
+//fillcircle(barCoord(0.5, 0.5), 0.5, color->[100,200,100]/255);
+
+
+</script>
+<script id="cstick" type="text/x-cindyscript">
+//FW: tick
+// v1
+animations = select(animations, a,
+	regional(λ,γ,value,now);
+  now=seconds();
+  if(isundefined(a:"exec"),
+
+  λ = min(1,(now-(a:"starttime"))/((a:"endtime")-(a:"starttime")));
+ if(λ>0,
+	if (a:"timeflow" == "linear",  
+				//default  
+	,
+	if (a:"timeflow" == "accel",
+			λ = 5/2*λ^3-3/2*λ^5;
+	,
+	if (a:"timeflow" == "jump",
+			if(λ<1, λ=0);
+	,
+	)));
+	if (a:"timeflow" == "set",
+		(a:"object"):(a:"property") = if(λ<1, a:"startvalue",a:"endvalue"),
+		if (isundefined(a:"movepath"), 
+			  (a:"object"):(a:"property") = a:"endvalue"* λ + a:"startvalue" * (1 - λ)
+				,
+				(a:"object"):(a:"property")=eval((a:"movepath"):"f",start->a:"startvalue",end->a:"endvalue",α->λ)
+		);
+	);
+);
+
+  );
+ 	// forall(ANI u,a, call(a,"recalc:"));
+	running = now < a:"endtime";
+	if (!running & !isundefined(a:"command"), a:"object":(a:"command"));
+	if (!running & a:"kill", obj = select(obj,# != a:"object"));
+	running
+);
+
+if(length(animations)==0, stopanimation());
+
+;
+
+</script>
+<script id="csmousedown" type="text/x-cindyscript">
+//FW: mousedown
+// v2
+mousedown = !mousedown;
+mousepressedtime=seconds();
+
+// Finde alle Elemente, die beweglich sind, wenn die Maus an der aktuellen Stelle ist (mouse().xy)
+hotlist = select(obj,eval(#:"ishot",coord->mouse().xy));
+
+// auch Typeorder fürs anklicken beachten
+hotlist = flatten(apply(typeorder,to,select(hotlist,o,o:"type"==to)))
+					++select(hotlist,o,not(contains(typeorder,o:"type")));
+
+//err(sum(apply(hotlist,#:"name"+" ")));	
+
+if(!isundefined(oldaction), 
+	hotlist = [oldaction];
+);
+
+//err(apply(hotlist,#:"info"));
+
+// Wenn es ein Element in der Hotlist gibt, dann finde die relative Distanz zwischen Referenzpunkt und Maus.
+if(length(hotlist)>0,
+	hot = hotlist_(length(hotlist));
+	startmouse = mouse().xy;
+	oldmouse = mouse().xy;
+	//err("pressed:"+hot:"name");
+	clickcopy = hot:"clickcopy";
+	if(not(isundefined(clickcopy)),
+		//clickcopy:"clickcopy"=NADA;
+		obj = obj :> clickcopy;
+		hot=clickcopy;
+	);
+
+	startcoord = hot:"coord";
+	localcoord = startmouse - hot:"coord";
+
+	action=eval(hot:"getaction",coord->startmouse, delta->localcoord, mouse -> mouse().xy);
+
+	//err("pressed:"+action);//err(hot:"moveable");
+
+	//obj = (obj -- [hot])++ [hot];
+	// dieses Movetofront geht so nicht, zerstört andere Stellen, die 
+	// mit globalem typeorder-Konzept arbeiten
+	//if(ifdefined(hot:"movetofront",true),obj = (obj -- [hot])++ [hot]);
+	//err(hot:"movetofront");
+
+	//err(sum(apply(obj,#:"name"+" ")));
+
+	// angefasste Elemente kommen nach vorn
+	x=0; //verhindert das seltsame Verhalten, dass bei Drücken nicht gezeichnet wird
+,
+	hot = NADA; // explizit auf "undefiniert" setzen.
+);
+
+;
+
+</script>
+<script id="cskeydown" type="text/x-cindyscript">
+//FW: keypressed
+// v3
+
+if(key() == "k" % key() == "K", // Debug print divomath details
+	println("=============DIVOMATH SETTINGS=============");
+	println("divomath base object: " + divomathConfig);
+	println("Screenbounds: " + screenbounds());
+	println("Config: " + 'dmconf);
+	println("State: " + 'dmstate);
+	println("Prev Answer: " + 'dmprevans);
+	println("bgcolor: " + 'bgcolor);
+	println("debuglevel: " + 'debuglevel);
+	println("isVIEWER?: " + 'dmisviewer);
+	println("-------------------------------------------");
+	println("SetState overwrite: " + divomathSetState());
+	println("==========================================="); 
+);
+
+if(key() == "s",
+	'screenbounds = apply(screenbounds(),screenresolution() * #.xy);
+	println("Screenbounds: " + 'screenbounds);
+	println("width [px]: " + ('screenbounds_2_1-'screenbounds_1_1));
+	println("height [px]: " + ('screenbounds_1_2-'screenbounds_3_2));
+);
+;
+
+</script>
+    <script type="text/javascript">
+var cdy = CindyJS({
+  scripts: "cs*",
+  defaultAppearance: {
+    dimDependent: 0.7,
+    fontFamily: "sans-serif",
+    lineSize: 1,
+    pointSize: 5.0,
+    textsize: 12.0
+  },
+  angleUnit: "°",
+  geometry: [
+    {name: "copyrighttext", type: "Button", pos: [4.0, -1.2066259808195292, 0.04934091086468822], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+  ],
+  animation: {
+    autoplay: false,
+    controls: false,
+    speed: 0.835052463917526,
+    speedRange: [0.0, 1.0],
+    accuracy: 1
+  },
+  autoplay: false,
+  animcontrols: false,
+  ports: [{
+    width:  1275,
+    height: 620,
+    id: "CSCanvas",
+    transform: [{visibleRect: [-0.54665859222655502, 6.3588285931796, 47.59117434010979, -15.5516116912695854]}],
+    axes: true,
+    grid: 0.5,
+    background: "rgb(255,255,255)"
+  }],
+  csconsole: true,
+  images: {
+    "turtle.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGEAAABkCAYAAACWy14QAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAbroAAG66AdbesRcAAAfYSURBVHhe7Z2NldQ2FEZ30wDbQZYKIBUEKggdBCoAKgAqCFQQ0gGpAOgAKgipIFDB5rsre8fjeZZkWT8ez9xzvp2xdmzLetLTkyzPXN7c3FxsgcvLy096+VX6LH1AurZvel09WzICBf6z27oDg7zWNWKg1bIlI/gu5G/pqa71u9tcFz91r0eNDHDdvZ3iN+mbPvfIba6LTRhBhIwA96SPMsRTt7keTskIPX+uzRCnaATAEA+79805VSPABxniqnvflFM2AuHsa/e2LVsxQmqNfq7WkGLArGzFCA+61xSat4ajH6x1fv0/t5XED5VB075hCy1haZRzT4ZsOojbghFy1OKzERaSI95vaoRV9wld5PJCoqB5P54lzcVXlUOzwdvajbC0041G5XDZva1Oc3fki9NVMEw9c09g0zQzAoUvvdfbf3yGENwl2zTVjYCL6Qtf+v020d8x1jBC09ZW1QgqfDpZbkP2hd/zpHs9QC6Jz391W8WgVR5Px9xlto9WhuC/v6DOl99B7dcLtZ87XCa+jlH7v9XLc7dVlDfKR/1pDIwQkqCmUogULgkhYQxunFD4GIzabH1uqCfWuZHgGOPPlxKLAq6sfJSSmdhLUJAxBTgljBZruPdWHnqJJfmYKyrRQysfJWQnOldDjRhmrLS+WXnpJWiJ431KispTxRCHCS5Sia29uTV50QKXOP58aVUxxF50pA4Q9/NRYmVCC3xREqHqD7dVDcqhfNTUW0PU7PymRGR1l6exBIYY71NKdd2RoA9o5YLGuh5nspfAVdJpjvfJraoRkvtTvxP26cU4k2MJQl9cZ4mW8dY6Z0lBiw7PJ1ZTm5m1JHIZBE8wOVYpKagZf8co2Q+LVINUHReMBfjZtbgjlrGbGU2RiBnp8/9o/y+Y/8raYnZvXOdce0A01KdhxnJLWAYJ9j+9BK2sb2F4j2wd92GCOxmTWDWjJc5VLxpxBol2P3xWGkdl2VqtmYhE719r9BnB5i0eWemlJSgDq0J6p1nmyEwcS1BzSvUbwZCQz3SfpTBwCRRM0ZbD8aWQe+bpH3P/OTITpyRoljn7DZq4tzCFL4QuYhBhuR9LWfoxMzEkQYQwzEyKqNVevyyojbF9UxaDdMeIPSeaHOHHykwMScyNwy3FjIxTXSD7UVGiC0jEuB9L5nUIjhdVIczEkESfgVQFR8UiR2tDuJWgQQQR4XjfXCIPHN/Mw0FCSILB3fAEcxWMsUWpGd3JCEuUNMJQB6FtymoL3/KUGLzPE3eLAnB3W+WVrvFTd523pBiBWpoKqxnw1z4IR31rTnkw/KX0uNMb6V/pmODrH3YVbdgsYiRSB2/eGzZIEJmM9+uFX52MpgR+PxTVrMEdDXXrmswM+TQ6SKwonFDH6LuxFBxPIEEr9RlibUZA1ymLv1L6BIb4tKBJdFwKeurZs1+0P/8PouPQIv5wWwc81nFMd6j9MMIrt1WVN2atqC3RT0tY8q5HsiSmXOYaW8KX6guCx3Qty7fEMSVSOqbo6kFTI8gAMeFolBsaMRkCr5HmLeFMYyPIF1NjmSX1kTIuuRsIHQPNW4IMQbTyzm2ZhIxkkbJPKz7PClE7H55SM88h6jQv98K0kETq5N2sGaLvF7NckfKbGjeZwoW1nqjIB2blkIttqCFMOk12Qq7FkD+Wi1mToFpi+97tSFGInXuCAVXKIjQjRWMSYHTKhE1ODZPa2oJd/dUDjITklh6j3myIJCg31liaJ/WYgRa7J17TYmOUl1Sz3u5jskQUpmKCVuPFZ6vYDqfysB1OnprxEpQgGPLztWp3t40g4uDhBgJ/PLwJCna9I3+OTITQxK+my+xojmel7xIZuKUOKFEbZmTSZ+C8b84L/5CglAwhwuydF4GaSX24iRSqXBxqPOC4L0EVwPoyXO5nBhxrsW+NVYCF7d0afziDrnX7s3O3w9PVFPH8JBIXz54h2zuEPD3qaFgbuV78MIVmlXwY9HHRBeoIPTN+7iUqOHz5yjaTYwlKHh8+NwgAleTfN6lAl8I2EItH6HNEu3MlfuzHneEYkbSuQreEu6raPg7lvvjLqpmNOTTZJQk6L9iBlFLVdU97d64MGyYkRZa2xeMVHFP+xuuiQ8zUlve6Ei0aK3Fv+viMME1+VauadIFiBYBBOVQ3C3ZiW7gVruzPtmvXzPvrOkfFAgt4pm05AEM7iTFflsXRvdBfmrB97BiADro8vTW8EnMDQcpUPYh6qLDjxkQTo5CRc2ggeusGqKmPp9AoVDAQ2i+1Jzzl9POBSPUkmDexer0vaNkUWNsUG1cMFbVtag6ITWaTv+v24QduAATtQI+v+TXo6JQ3ur4f4PqC4J1sd8l+ov7Um8MX6dMaLppZvcJuaGmKw903Cb6PwbikdOiKA/NfkmkuRF8dB36+edcGoMReHaBH5ko+cB47W8e3mPVLSEGtRZCyqXPFXxWOdQcDO6x9pYQQ2ikHUOOYySzBSPkoFl4CkfvjkAuaclFnH8AdQUwndKUrRhhyU90MYpvyqm3hHdyRZMDxVpsxQgpHSvjjvozpgZbMcLe1Hkk3L9I2S87p9oSnskATcPSIafYEjBA84hoyFbGCTETfcwP4YKajo4tNtESInw73yDJlPnqDABbcUdgzbIyfuBLRVbTCVtsyQh9vE/B872p91XwPGK1ytq/4+Lif2ji+bS+3sN7AAAAAElFTkSuQmCC"
+  },
+  cinderella: {build: 2091, version: [3, 0, 2091]}
+});
+    </script>
+</head>
+<body>
+    <div id="CSCanvas"></div>
+</body>
+</html>
