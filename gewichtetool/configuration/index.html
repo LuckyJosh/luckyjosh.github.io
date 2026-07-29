@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<html>
+
+<head>
+  <style>
+    a {
+      font-size: 12px;
+    }
+
+    #container {
+      display: grid;
+      grid-template-columns: 8fr 4fr;
+    }
+
+    #subcontainer {
+      display: grid;
+      grid-template-columns: 10% 90%;
+    }
+
+    textarea {
+      font-size: small;
+      resize: none;
+    }
+  </style>
+</head>
+<script>
+  let CONFIGURATION;
+  let toolFrame;
+
+
+  function setupLinenumbers(e) {
+
+    linenumbers.textContent = `
+`;
+
+  }
+
+
+  window.onload = () => {
+    linenumbers.style["text-align"] = "right";
+
+    configeditor.addEventListener("input", (e) => {
+
+      let configLines = configeditor.value.split("\n");
+      let lineIsNumbered = configLines.map(it => !!!it.match(/^\s*\/\//));
+      let numbers = [];
+      let count = 0;
+      lineIsNumbered.forEach(it => {
+        if (it) {
+          count += 1;
+          numbers.push(count.toString())
+        } else {
+          numbers.push("")
+        }
+
+      });
+
+      linenumbers.textContent = numbers.join("\n");
+
+
+    })
+
+    configeditor.textContent = `{
+    "nocache": true,
+    "maxnumcubes": 4000,
+    "mode": "stacking",
+    // "interactive": false,
+    "cubesize": 6,
+    // "mode": "stacking",
+    "splitslider": false,
+    // "splitslider": false,
+    // "onlystacking": "G",
+    // "onlystacking": "KG",
+    "onlystacking": "both",
+    // "numofcubes": 1254,
+    // "numofcubesKG": 1234,
+    // "numofcubesG": 2378,
+    // "centerscale": false,
+    "centerscale": false,
+    // "barsonscale": false,
+    "barsonscale": false,
+    "scaleKGLabels": true,
+    "scaleGLabels": true,
+    // "scaleKG100Ticks": true,
+    "scaleKG100Ticks": "auto",
+    "digitalscaleKG": false,
+    "digitalscaleG": false,
+    "edgewidth1000cubeG": 3,
+    "edgewidth1000cubeKG": 3,
+    "seesawboardyoffset": 0.7
+
+}
+`;
+  }
+  function configWithoutComments() {
+    return configeditor.value.split("\n").filter(it => !it.match(/^\s*\/\//)).join("\n");
+  }
+
+  function config2ClipboardWithoutComments() {
+    // Get the text field
+
+    // Select the text field
+    configeditor.select();
+    configeditor.setSelectionRange(0, 99999); // For mobile devices
+
+    // Copy the text inside the text field
+    navigator.clipboard.writeText(configWithoutComments());
+  }
+
+
+  function config2Clipboard() {
+    // Get the text field
+
+    // Select the text field
+    configeditor.select();
+    configeditor.setSelectionRange(0, 99999); // For mobile devices
+
+    // Copy the text inside the text field
+    navigator.clipboard.writeText(configeditor.value);
+  }
+
+
+
+  function parseConfiguration() {
+    let parseResult;
+    let editorValue = configeditor.value;
+    let cleanedEditorValue = configWithoutComments();
+
+
+
+    try {
+      parseResult = JSON.parse(cleanedEditorValue);
+    } catch (error) {
+      alert(error)
+    }
+
+
+    return parseResult
+
+  }
+
+
+  function createToolFrame() {
+
+
+    CONFIGURATION = parseConfiguration();
+
+
+
+    let toolDiv = document.getElementById("toolDiv");
+    if (toolFrame != undefined) toolDiv.removeChild(toolFrame);
+
+    toolFrame = document.createElement("iframe");
+    toolFrame.setAttribute("id", "toolFrame");
+    toolFrame.setAttribute("src", "./component-weights.html");
+    toolFrame.setAttribute("width", "95%");
+    toolFrame.setAttribute("height", "95%");
+
+
+    let msgChannel = new MessageChannel();
+    msgChannel.port1.onmessage = (msg) => {
+      console.log("Communication: Articulate got a message via MessageChannel port");
+      switch (msg.data.method) {
+        case "get":
+          console.log("Communication: Handling method='get'")
+          //player.__dotarray_data.timings.push(new Date().getTime());
+          let tiles;
+          if (msg.data.key != undefined) {
+            console.log(`Communication: get tiles with label '${msg.data.key}'`)
+            //tiles = player.__dotarray_data.allTiles[msg.data.key];
+          } else {
+            console.log("Communication: get all tiles")
+            //tiles = player.__dotarray_data.allTiles;
+          }
+          msgChannel.port1.postMessage({method: "get", value: tiles})
+          break;
+        case "set":
+          console.log("Communication: Handling method='set'")
+          break;
+        default:
+
+          console.log("Communication: The message (via MessageChannel) could not be handled by Articulate\n", msg)
+          break;
+      }
+    };
+
+
+    function onLoad() {
+      console.log(`Articulate: run onLoad for iframe, initalize MessageChannels`)
+      toolFrame.contentWindow.postMessage({method: "init", configuration: CONFIGURATION}, "*", [
+        msgChannel.port2
+      ]);
+    }
+
+    toolFrame.addEventListener("load", onLoad);
+
+    toolDiv.appendChild(toolFrame);
+
+  }
+
+</script>
+
+<body>
+  <h3>Gewichtetool Konfiguration</h3>
+  <div id="container">
+
+    <div id="toolDiv">
+      <h3>Gewichtetool</h3>
+
+    </div>
+
+    <div id="linklist-unit-2">
+      <h3>Konfigurations-Editor</h3>
+      <div id="subcontainer">
+        <textarea id="linenumbers" rows="52" cols="1"></textarea>
+        <textarea id="configeditor" rows="52" cols="80"></textarea>
+      </div>
+      <button onclick="createToolFrame()"> Anwenden </button>
+      <button onclick="config2Clipboard()"> Kopieren </button>
+      <button onclick="config2ClipboardWithoutComments()"> Kopieren ohne //... Zeilen </button>
+
+
+    </div>
+  </div>
+
+
+</body>
+<html>
