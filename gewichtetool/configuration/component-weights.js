@@ -1,3 +1,5 @@
+function require(name){}
+
 let CONFIGURATION;
 let timings = [];
 
