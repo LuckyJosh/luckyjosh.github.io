@@ -1,4 +1,6 @@
 
+require = function (arg) { return p5 }
+
 
 let CONFIGURATION;
 let timings = [];
