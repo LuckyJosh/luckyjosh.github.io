@@ -31,140 +31,144 @@
   let toolFrame;
 
   let DEFAULTCONFIG = `{
-uiscale: 1.0,
-barprecision: .01,
-barposition: [-6, 14],
-barwidth: 20,
-barheight: 1.5,
-barpadding: 2.5,
-barvalue: 0.0,
-basevalue: 1000,
-
-subdivisions: 1,
-unit: "MB",
-
-// müssen wohl eher nicht geändert werden
-// Cindyvariablen sind noch nicht möglich 
-//barcolor: DZLMCOLORGOLD,
-//fontfamily: NADA,
-
-leftoutpercentages: [],
-
-leftoutvalues: [],
-custompercentages: [],
-customvalues: [],
-scaffoldbasevalue: false,
-scaffoldvalue: false,
-scaffoldpercentage: false,
-isbardraggable: true,
-alwaysdrawarches: true,
-snapbar: false,
-decimalspercentage: 2,
-decimalsvalue: 2,
-numberofbars: 1,
-keepstable: "basevalue",
-showbuttons: true,
-overflow: false,
-hidetoggles: [
-
-  // Toggles COL1 
-  // "percentage",
-  // "part",
-  // "basevalue",
-  // "parts",
-  // "percentages",
-  //
-  // Toggles COL2
-  // "arch",
-  // "showtf-div",
-  // "showtf-divpercentage",
-  // "showtf-divvalue",
-  //
-  //Toggles COL3
-  // "showtf-perc",
-  // "showtf-value",
-  // "showtf-base",
-  // "overflow"
-],
-
-//Toggle States
-//Toggles are inactive by default, if set to true,
-//the corresponding toggle will be active
-toggleStates: {
-
-  // Toggles COL1 
-  "percentage": false,
-  "part": false,
-  "basevalue": false,
-  "parts": false,
-  "percentages": false,
-
-  // Toggles COL2
-  "arch": false,
-  "showtf-div": false,
-  "showtf-divpercentage": false,
-  "showtf-divvalue": false,
-
-  //Toggles COL3
-  "showtf-perc": false,
-  "showtf-value": false,
-  "showtf-base": false,
-  "overflow": false
-},
 
 
-//TogglePlacement
-toggleAnchorpointOffset: [0, 0],
-toggleOffsetYFactor: {
-  // The higher the factor the futher up the toggle will be
-  //Toggles COL1 
-  percentage: 4,
-  part: 3,
-  basevalue: 2,
-  parts: 1,
-  percentages: 0,
+  uiscale: 1.0,
+  barprecision: .01,
+  barposition: [-6, 14],
+  barwidth: 20,
+  barheight: 1.5,
+  barpadding: 2.5,
+  barvalue: 0.0,
+  basevalue: 20,
 
-  //Toggles COL2
-  arch: 3,
-  showtfdiv: 2,
-  showtfdivpercentage: 1,
-  showtfdivvalue: 0,
-  //Toggles COL3
-  showtfperc: 3,
-  showtfvalue: 2,
-  showtfbase: 1,
-  overflow: 0
-},
+  subdivisions: 1,
+  unit: "GB",
 
-numpadOffset: [-9, -9.5],
-numpadKeysize: 1.5,
+  // müssen wohl eher nicht geändert werden
+  // Cindyvariablen sind noch nicht möglich 
+  //barcolor: DZLMCOLORGOLD,
+  //fontfamily: NADA,
 
-archesHeightFactor: 1,
-showBackgroundGrid: false,
+  leftoutpercentages: [],
 
-ARTICULATEVARIABLES: [
+  leftoutvalues: [],
+  custompercentages: [],
+  customvalues: [],
+  scaffoldbasevalue: false,
+  scaffoldvalue: false,
+  scaffoldpercentage: false,
+  isbardraggable: true,
+  alwaysdrawarches: true,
+  snapbar: false,
+  decimalspercentage: 2,
+  decimalsvalue: 2,
+  numberofbars: 1,
+  keepstable: "basevalue",
+  showbuttons: true,
+  overflow: false,
+  hidetoggles: [
 
-  /* Beispiel:
-   Die Variablen müssen vorher in Articulate angelegt werden (hier "test" und "test1")
-  {
-    // Anteil am Streifen in Prozent
-    cindyValue: "bars_1.value*100",
-    articulateVariable: "test"
+    // Toggles COL1 
+    // "percentage",
+    // "part",
+    // "basevalue",
+    // "parts",
+    // "percentages",
+    //
+    // Toggles COL2
+    // "arch",
+    // "showtf-div",
+    // "showtf-divpercentage",
+    // "showtf-divvalue",
+    //
+    //Toggles COL3
+    // "showtf-perc",
+    // "showtf-value",
+    // "showtf-base",
+    // "overflow"
+  ],
+
+  //Toggle States
+  //Toggles are inactive by default, if set to true,
+  //the corresponding toggle will be active
+  toggleStates: {
+
+    // Toggles COL1 
+    "percentage": false,
+    "part": false,
+    "basevalue": false,
+    "parts": false,
+    "percentages": false,
+
+    // Toggles COL2
+    "arch": false,
+    "showtf-div": false,
+    "showtf-divpercentage": false,
+    "showtf-divvalue": false,
+
+    //Toggles COL3
+    "showtf-perc": false,
+    "showtf-value": false,
+    "showtf-base": false,
+    "overflow": false
   },
-  {
-    // Anzahl der Schritte am Streifen 
-    cindyValue: "length(bars_1.ticks)",
-    articulateVariable: "test1"
-  }
- */
 
-],
 
-// store state of every Percentagebar in a cache 
-storeState: true,
+  //TogglePlacement
+  toggleAnchorpointOffset: [0, 0],
+  toggleOffsetYFactor: {
+    // The higher the factor the futher up the toggle will be
+    //Toggles COL1 
+    percentage: 4,
+    part: 3,
+    basevalue: 2,
+    parts: 1,
+    percentages: 0,
 
-// time in milliseconds, for the first communication between articulate and the webobject 
-startCallbackDelay: 25
+    //Toggles COL2
+    arch: 3,
+    showtfdiv: 2,
+    showtfdivpercentage: 1,
+    showtfdivvalue: 0,
+    //Toggles COL3
+    showtfperc: 3,
+    showtfvalue: 2,
+    showtfbase: 1,
+    overflow: 0
+  },
+
+  numpadOffset: [-9, -9.5],
+  numpadKeysize: 1.5,
+
+  archesHeightFactor: 1,
+  showBackgroundGrid: false,
+
+  ARTICULATEVARIABLES: [
+    {
+      // Prozentsatz (eingestellter Streifen)
+      cindyValue: "bars_1.value*100",
+      articulateVariable: "..."
+    },
+    {
+      //Grundwert
+      cindyValue: "bars_1.basevalue",
+      articulateVariable: "..."
+    },
+    {
+      //Anzahl Schritte
+      cindyValue: "length(bars_1.ticks)",
+      articulateVariable: "..."
+    }
+  ],
+
+  // store state of every Percentagebar in a cache 
+  storeState: true,
+
+  // time in milliseconds, for the first communication between articulate and the webobject 
+  startCallbackDelay: 25
+
+
 
 
 
