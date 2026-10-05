@@ -112,7 +112,7 @@
       if (value.ctype == "list") return fromCindyScriptList(value);
       if (value.ctype == "JSON") return fromCindyScriptJson(value);
 
-      throw Error(`The value (${value}), can not be transformed from CindyJS!`)
+      throw Error(`The value (${JSON.stringify(value)}), can not be transformed from CindyJS!`)
 
     }
 
@@ -226,7 +226,7 @@
     function sendMessageToArticulate(msgData) {
 
       msgData.key = CONFIGURATION.webobjectKey;
-      console.warn(msgData);
+      console.log(msgData);
       COMMUNICATION.port.postMessage(msgData);
 
     }
@@ -9336,10 +9336,14 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 	o:"scaffoldbasevalue" = scaffoldbasevalue;
 	o:"drawsteps" = NADA;
 
-	// Handles for interface (textfields, buttons, toggles)
+	
+
+  // Handles for interface (textfields, buttons, toggles)
 	o:"toggles" = NADA; // set at init
 	o:"textfields" = NADA; // set at init
 	o:"buttons" = NADA; // set at init
+
+
 
 	// Values for Percentagebar
 	o:"unit" = unit;
@@ -9356,6 +9360,37 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 
 	o:"ishot" := inrectangle(my("hitbox"), mouse().xy);
 	o:"isactive" = false; // for use with multiple bars. Controls which bar is targetted by toggle switch state changes (see "toggleactive")
+
+
+  
+  // check if values have changed from the default, 
+  // any change (list or) counts
+  // these three values are the only ones thats need checking
+  // - divisions: gets changed via all textfields in col2
+  // - value: gets changed by all textfields in col3, except
+  // - basevalue
+  // the rest are only visual changes that dont count
+  // mostly for use in articulate storyline
+
+  o:"interactionIndicatiors" = ["basevalue", "value", "divisions"];
+  o:"interactionIndicatiorsDefaultValues" = [baseval, value, divisions];
+  
+  o:"_hasBeenInteractedWith" = false;
+  o:"hasBeenInteractedWith" :=(
+    if(!my("_hasBeenInteractedWith"), 
+        checkResults = apply(1..3, idx,
+          my(my("interactionIndicatiors")_idx) != my("interactionIndicatiorsDefaultValues")_idx
+        );
+
+        self():"_hasBeenInteractedWith"  = list or(checkResults);
+    );
+
+    my("_hasBeenInteractedWith")
+
+  );
+
+
+
 
 	o:"draw" := (
 		// Draw background box	
@@ -9635,6 +9670,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		if(toggles:"parts":"state" != self():"drawvaluelabels", toggles:"parts":"click");
 		if(toggles:"percentages":"state" != self():"drawpercentagelabels", toggles:"percentages":"click");
 		if(toggles:"arch":"state" != self():"drawarches", toggles:"arch":"click");
+		if(toggles:"div":"state" != self():"drawsteps", toggles:"div":"click");
 		if(toggles:"overflow":"state" != self():"canoverflow", toggles:"overflow":"click");
 		
 		self():"drawcurrentpercentage"	:= toggles:"percentage":"state";
@@ -9644,7 +9680,8 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		self():"drawpercentagelabels"		:= toggles:"percentages":"state";
 		self():"drawarches"							:= toggles:"arch":"state";
 		self():"canoverflow"						:= toggles:"overflow":"state";
-		self():"drawsteps" 							:= anystepsactive();
+		self():"drawsteps" 							:= toggles:"div":"state";
+
 
 		textfields:"divisions":"value" = my("divisions") + "";
 		textfields:"divisions-value":"value" =  my("basevalue")/my("divisions") + "";
@@ -9665,7 +9702,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 			self():"drawpercentagelabels"		= toggles:"percentages":"state";
 			self():"drawarches"							= toggles:"arch":"state";
 			self():"canoverflow"						= toggles:"overflow":"state";
-			self():"drawsteps" 							= anystepsactive();
+			self():"drawsteps" 							= toggles:"div":"state";
 		);
 		
 		self():"isactive" = false;
@@ -9697,6 +9734,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 	);
 	
 	o:"setvalue" := (
+
 		// Set value according to mouse coords
 		self():"value" = (mouse().xy - my("coord"))_1 / my("width");
 		
@@ -9709,6 +9747,9 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 
 		// Round according to given precision
 		self():"value" = my("precision") * round(my("value")/my("precision"));
+
+
+
 	);
 
 	o:"setTicks" := if(false,
@@ -9753,6 +9794,7 @@ percentagesToggleOffsetYFactor = CONFIGURATION.toggleOffsetYFactor.percentages; 
 
 //COL2
 archToggleOffsetYFactor = CONFIGURATION.toggleOffsetYFactor.arch; // 3;
+divToggleOffsetYFactor = CONFIGURATION.toggleOffsetYFactor.div; //3;
 showtfdivToggleOffsetYFactor = CONFIGURATION.toggleOffsetYFactor.showtfdiv; // 2;
 showtfdivpercentageToggleOffsetYFactor = CONFIGURATION.toggleOffsetYFactor.showtfdivpercentage; // 1;
 showtfdivvalueToggleOffsetYFactor = CONFIGURATION.toggleOffsetYFactor.showtfdivvalue; // 0;
@@ -9778,7 +9820,8 @@ offsetx = [togglepad+togglesize*UISCALE+toggles:"part":"labelpad"+max(apply(valu
 anchorpoint = anchorpoint + offsetx;// bottom left corner for col 2.
 
 toggles:"arch"										= new Toggle(anchorpoint + archToggleOffsetYFactor* offsety, togglesize, alwaysdrawarches, "Bögen", 14);
-toggles:"showtf-div"							= new Toggle(anchorpoint + showtfdivToggleOffsetYFactor * offsety, togglesize, alwaysdrawarches, "Anzahl der Schritte:", 14);
+toggles:"div"                     = new Toggle(anchorpoint + divToggleOffsetYFactor* offsety, togglesize, alwaysdrawarches, "Schritte", 14);
+toggles:"showtf-div"							= new Toggle(anchorpoint + showtfdivToggleOffsetYFactor * offsety, togglesize, false, "Anzahl der Schritte:", 14);
 toggles:"showtf-divpercentage"		= new Toggle(anchorpoint + showtfdivpercentageToggleOffsetYFactor * offsety, togglesize, false, "Größe des Schritts in %:", 14);
 toggles:"showtf-divvalue"					= new Toggle(anchorpoint + showtfdivvalueToggleOffsetYFactor * offsety, togglesize, false, "Größe des Schritts" + if(unit=="",":", " in " + unit + ":"), 14);
 
@@ -10211,6 +10254,10 @@ toggles:"showtf-perc":"script" := if(my("state"),
 );
 
 toggles:"showtf-div":"script" := if(my("state"),
+
+  // show the dividers between divisions 
+	eval(toggles:"div":"setstate", 'newstate->true);
+
 	obj = obj ++ [textfields:"divisions"];
 	obj = obj ++ [buttons:"plusdiv"];
 	obj = obj ++ [buttons:"minusdiv"];
@@ -10218,10 +10265,13 @@ toggles:"showtf-div":"script" := if(my("state"),
 	obj = obj -- [textfields:"divisions"];
 	obj = obj -- [buttons:"plusdiv"];
 	obj = obj -- [buttons:"minusdiv"];
-	if(!anystepsactive(), eval(toggles:"arch":"setstate", 'newstate->false));
 );
 
 toggles:"showtf-divpercentage":"script" := if(my("state"),
+
+  // show the dividers between divisions 
+	eval(toggles:"div":"setstate", 'newstate->true);
+
 	obj = obj ++ [textfields:"divisions-percentage"];
 	obj = obj ++ [buttons:"plusdiv-percentage"];
 	obj = obj ++ [buttons:"minusdiv-percentage"];
@@ -10229,10 +10279,13 @@ toggles:"showtf-divpercentage":"script" := if(my("state"),
 	obj = obj -- [textfields:"divisions-percentage"];
 	obj = obj -- [buttons:"plusdiv-percentage"];
 	obj = obj -- [buttons:"minusdiv-percentage"];
-	if(!anystepsactive(), eval(toggles:"arch":"setstate", 'newstate->false));
 );
 
 toggles:"showtf-divvalue":"script" := if(my("state"),
+
+  // show the dividers between divisions 
+	eval(toggles:"div":"setstate", 'newstate->true);
+
 	obj = obj ++ [textfields:"divisions-value"];
 	obj = obj ++ [buttons:"plusdiv-value"];
 	obj = obj ++ [buttons:"minusdiv-value"];
@@ -10240,11 +10293,26 @@ toggles:"showtf-divvalue":"script" := if(my("state"),
 	obj = obj -- [textfields:"divisions-value"];
 	obj = obj -- [buttons:"plusdiv-value"];
 	obj = obj -- [buttons:"minusdiv-value"];
-	if(!anystepsactive(), eval(toggles:"arch":"setstate", 'newstate->false));
 );
 
-toggles:"arch":"script" := if(my("state") & !anystepsactive(),
-	eval(toggles:"showtf-div":"setstate", 'newstate->true);
+toggles:"arch":"script" := if(my("state"),
+
+  // show the dividers between divisions 
+	eval(toggles:"div":"setstate", 'newstate->true);
+);
+
+toggles:"div":"script" := if(my("state"),
+
+// nothing 
+
+,//else: state==false
+
+  // switch off all toggles, that need the dividers to be shown
+  eval(toggles:"arch":"setstate", 'newstate->false);
+  eval(toggles:"showtf-div":"setstate", 'newstate->false);
+  eval(toggles:"showtf-divpercentage":"setstate", 'newstate->false);
+  eval(toggles:"showtf-divvalue":"setstate", 'newstate->false);
+
 );
 
 
@@ -10290,7 +10358,8 @@ forall(bars, bar,
 	bar:"drawcurrentvalue"			= toggles:"part":"state";
 	bar:"drawarches"						= toggles:"arch":"state";
 	bar:"canoverflow"						= toggles:"overflow":"state";
-	bar:"drawsteps" 						= anystepsactive();
+	bar:"drawsteps" 						= toggles:"div":"state";
+
 	
 	bar:"standardTicks"	= 'standardTicks;
 	
@@ -13125,6 +13194,7 @@ sendMessageToArticulate({
 //"drawarches": apply(bars,#.drawarches),
 // "canoverflow": apply(bars,#.canoverflow),
 "drawsteps": apply(bars,#.drawsteps),
+"hasBeenInteractedWith" : apply(bars, #.hasBeenInteractedWith),
 
 "tf-percentage": textfields:"percentage":"value",
 "tf-value": textfields:"value":"value",
@@ -13147,6 +13217,7 @@ sendMessageToArticulate({
 "tg-showtf-value": toggles:"showtf-value":"state",
 "tg-showtf-base": toggles:"showtf-base":"state",
 "tg-overflow": toggles:"overflow":"state"
+
 }
 });
 );

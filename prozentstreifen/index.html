@@ -40,10 +40,10 @@
   barheight: 1.5,
   barpadding: 2.5,
   barvalue: 0.0,
-  basevalue: 20,
+  basevalue: 1000,
 
   subdivisions: 1,
-  unit: "GB",
+  unit: "MB",
 
   // müssen wohl eher nicht geändert werden
   // Cindyvariablen sind noch nicht möglich 
@@ -78,6 +78,7 @@
     //
     // Toggles COL2
     // "arch",
+    // "div",
     // "showtf-div",
     // "showtf-divpercentage",
     // "showtf-divvalue",
@@ -103,6 +104,7 @@
 
     // Toggles COL2
     "arch": false,
+    "div": false,
     "showtf-div": false,
     "showtf-divpercentage": false,
     "showtf-divvalue": false,
@@ -119,23 +121,26 @@
   toggleAnchorpointOffset: [0, 0],
   toggleOffsetYFactor: {
     // The higher the factor the futher up the toggle will be
+
     //Toggles COL1 
-    percentage: 4,
-    part: 3,
-    basevalue: 2,
-    parts: 1,
-    percentages: 0,
+    "percentage": 4,
+    "part": 3,
+    "basevalue": 2,
+    "parts": 1,
+    "percentages": 0,
 
     //Toggles COL2
-    arch: 3,
-    showtfdiv: 2,
-    showtfdivpercentage: 1,
-    showtfdivvalue: 0,
+    "arch": 4,
+    "div": 3,
+    "showtfdiv": 2,
+    "showtfdivpercentage": 1,
+    "showtfdivvalue": 0,
+
     //Toggles COL3
-    showtfperc: 3,
-    showtfvalue: 2,
-    showtfbase: 1,
-    overflow: 0
+    "showtfperc": 3,
+    "showtfvalue": 2,
+    "showtfbase": 1,
+    "overflow": 0
   },
 
   numpadOffset: [-9, -9.5],
@@ -157,9 +162,21 @@
     },
     {
       //Anzahl Schritte
-      cindyValue: "length(bars_1.ticks)",
+      cindyValue: "bars_1.divisions",
+      articulateVariable: "..."
+    },
+    {
+      // Mit dem Tool wurde interagiert
+      // "Interaktion"" bedeutet, dass einer der drei Werte 
+      // Grundwert, Anzahl Schritte, Prozentsatz des Streifens 
+      // (die drei anderen Werte die wir Tracken)
+      // geändert wurde.
+      // Das zurücksetzen auf die Standardwerte
+      // ändert diesen Status "wurde interagiert" nicht zurück
+      cindyValue: "bars_1.hasBeenInteractedWith",
       articulateVariable: "..."
     }
+
   ],
 
   // store state of every Percentagebar in a cache 
@@ -167,8 +184,6 @@
 
   // time in milliseconds, for the first communication between articulate and the webobject 
   startCallbackDelay: 25
-
-
 
 
 
